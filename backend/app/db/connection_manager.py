@@ -22,6 +22,61 @@ ALLOWED_SCHEME_PATTERNS = {
     "mssql": r"^mssql\+pyodbc://"
 }
 
+def sanitize_db_url(url: str) -> str:
+    """
+    Safely parses a database URL and URL-encodes the username and password 
+    if they contain special characters (like @, :, /, etc.) that are not already encoded.
+    """
+    url = url.strip()
+    if not url:
+        return url
+        
+    # Match scheme://
+    scheme_match = re.match(r"^(\w+(?:\+\w+)?)(://)", url)
+    if not scheme_match:
+        return url
+        
+    scheme = scheme_match.group(1)
+    rest = url[len(scheme_match.group(0)):]
+    
+    # Split auth/host part from path/query
+    # Since sqlite:///path starts with /, the split leaves first item as empty
+    parts = rest.split("/", 1)
+    auth_host = parts[0]
+    path_query = "/" + parts[1] if len(parts) > 1 else ""
+    
+    # Split auth and host
+    if "@" in auth_host:
+        # The last @ separates auth from host
+        auth_part, host_part = auth_host.rsplit("@", 1)
+    else:
+        auth_part, host_part = "", auth_host
+        
+    if auth_part:
+        if ":" in auth_part:
+            username, password = auth_part.split(":", 1)
+        else:
+            username, password = auth_part, ""
+            
+        # Decode first to prevent double encoding
+        username_decoded = urllib.parse.unquote(username)
+        password_decoded = urllib.parse.unquote(password)
+        
+        # Encode username and password
+        username_encoded = urllib.parse.quote_plus(username_decoded)
+        password_encoded = urllib.parse.quote_plus(password_decoded)
+        
+        if password_encoded:
+            auth_part_encoded = f"{username_encoded}:{password_encoded}"
+        else:
+            auth_part_encoded = username_encoded
+            
+        auth_host_encoded = f"{auth_part_encoded}@{host_part}"
+    else:
+        auth_host_encoded = host_part
+        
+    return f"{scheme}://{auth_host_encoded}{path_query}"
+
 def validate_connection_details(database_type: str, database_url: str) -> str:
     """
     Validate the database scheme type and url structure.
@@ -37,12 +92,14 @@ def validate_connection_details(database_type: str, database_url: str) -> str:
             f"{', '.join(SUPPORTED_DATABASES.values())}."
         )
 
-    url = database_url.strip()
+    # Sanitize/encode password in URL before checking prefix and format
+    url = sanitize_db_url(database_url.strip())
     if not url:
         raise ValueError("Database connection URL cannot be empty.")
 
     pattern = ALLOWED_SCHEME_PATTERNS.get(db_type)
     if not pattern or not re.match(pattern, url):
+
         valid_formats = {
             "postgresql": "postgresql://username:password@host:5432/db",
             "mysql": "mysql+pymysql://username:password@host:3306/db",
@@ -78,6 +135,7 @@ def get_connection_metadata(database_type: str, database_url: str) -> Dict[str, 
     """
     Extract masked URL, host, and database name properties from connection strings.
     """
+    database_url = sanitize_db_url(database_url)
     provider = validate_connection_details(database_type, database_url)
     db_type = database_type.lower().strip()
 
@@ -129,7 +187,9 @@ def create_user_engine(database_url: str) -> Engine:
     """
     Create a SQLAlchemy engine dynamically for user-connected databases.
     """
+    database_url = sanitize_db_url(database_url)
     # Enforce safe connection timeout limits
+
     connect_args = {}
     if "postgresql" in database_url or "postgres" in database_url:
         connect_args = {"connect_timeout": 10}
@@ -167,7 +227,9 @@ def test_user_connection(database_type: str, database_url: str) -> Dict[str, Any
             "masked_url": metadata["masked_url"],
             "host": metadata["host"],
             "database_name": metadata["database_name"],
-            "read_only_mode": True
+            "read_only_mode": True,
+            "message": f"Successfully connected to {metadata['provider']} database."
         }
     except Exception as e:
         raise Exception(f"Connection check query failed for {provider}: {str(e)}")
+

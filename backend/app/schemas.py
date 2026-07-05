@@ -22,7 +22,8 @@ class ConnectionTestResponse(BaseModel):
     """Database connection test response."""
     connected: bool
     database_type: Optional[str] = None
-    message: str
+    message: Optional[str] = "Connection successful"
+
 
 
 class SchemaIngestResponse(BaseModel):
