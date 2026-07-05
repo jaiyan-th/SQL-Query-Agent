@@ -64,7 +64,7 @@ export const SqliteUploadOnboarding: React.FC<OnboardingProps> = ({
   return (
     <div className="flex flex-col gap-6 text-left">
       {/* Visual step boxes connected by lines */}
-      <div className="flex items-center justify-between w-full max-w-lg mx-auto bg-[#0E1116] border border-[#252B36] rounded p-4 font-mono-code">
+      <div className="flex items-center justify-between w-full max-w-lg mx-auto bg-[var(--bg-base)] border border-[#252B36] rounded p-4 font-mono-code">
         {steps.map((s, idx) => (
           <React.Fragment key={idx}>
             <div className="flex items-center gap-2">

@@ -4,9 +4,9 @@ import { ArrowRight } from 'lucide-react';
 
 export const LandingPage: React.FC = () => {
   return (
-    <div className="min-h-screen bg-[#0E1116] text-[#E6E8EF] flex flex-col font-sans select-none selection:bg-[#53D6CC]/20 selection:text-[#53D6CC]">
+    <div className="min-h-screen bg-[var(--bg-base)] text-[#E6E8EF] flex flex-col font-sans select-none selection:bg-[#53D6CC]/20 selection:text-[#53D6CC]">
       {/* 1. Header Navigation */}
-      <nav className="bg-[#0E1116]/80 backdrop-blur-md border-b border-[#252B36] px-6 py-4 sticky top-0 z-50">
+      <nav className="bg-[var(--bg-base)]/80 backdrop-blur-md border-b border-[#252B36] px-6 py-4 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
             <h1 className="text-xl font-bold font-display text-[#E6E8EF] tracking-tight flex items-center gap-1">
@@ -113,7 +113,7 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* 3. Pipeline Trace Section */}
-      <section id="pipeline" className="px-6 py-24 border-t border-[#252B36] bg-[#0E1116]">
+      <section id="pipeline" className="px-6 py-24 border-t border-[#252B36] bg-[var(--bg-base)]">
         <div className="max-w-7xl mx-auto text-center">
           <h2 className="text-2xl md:text-3xl font-extrabold mb-2">Pipeline Trace Execution</h2>
           <p className="text-xs text-[#7E8A99] mb-16 font-semibold">
@@ -133,7 +133,7 @@ export const LandingPage: React.FC = () => {
               { label: "Result", step: "6", desc: "Renders tables/charts", highlight: false }
             ].map((p, idx) => {
               return (
-                <div key={idx} className="relative z-10 flex flex-col items-center bg-[#0E1116] px-4 py-2">
+                <div key={idx} className="relative z-10 flex flex-col items-center bg-[var(--bg-base)] px-4 py-2">
                   <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center font-mono-code text-xs font-bold transition-all duration-300 ${
                     p.highlight 
                       ? 'border-[#53D6CC] bg-[#53D6CC]/10 text-[#53D6CC] shadow-[0_0_15px_rgba(83,214,204,0.35)]'
@@ -151,7 +151,7 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* 4. Feature Showcase Grid */}
-      <section id="features" className="px-6 py-20 border-t border-[#252B36] bg-[#0E1116] max-w-7xl mx-auto w-full">
+      <section id="features" className="px-6 py-20 border-t border-[#252B36] bg-[var(--bg-base)] max-w-7xl mx-auto w-full">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
           {/* Card 1 */}
           <div className="bg-[#151922] border border-[#252B36] rounded-[6px] p-8 flex flex-col justify-between">
@@ -184,7 +184,7 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* 5. Enterprise Security Panel */}
-      <section id="security" className="px-6 py-24 border-t border-[#252B36] bg-[#0E1116]">
+      <section id="security" className="px-6 py-24 border-t border-[#252B36] bg-[var(--bg-base)]">
         <div className="max-w-7xl mx-auto">
           <div className="bg-[#151922] border border-[#252B36] rounded-[6px] p-8 md:p-12 text-left flex flex-col lg:flex-row gap-12 items-center justify-between">
             <div className="max-w-2xl">
@@ -240,7 +240,7 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* 6. Call To Action Footer */}
-      <footer className="border-t border-[#252B36] py-16 text-center mt-auto px-6 bg-[#0B0F15]">
+      <footer className="border-t border-[#252B36] py-16 text-center mt-auto px-6 bg-[var(--bg-sidebar)]">
         <div className="max-w-xl mx-auto flex flex-col items-center">
           <h3 className="text-xl font-bold text-[#E6E8EF] tracking-tight">Ready to Query?</h3>
           <p className="text-xs text-[#7E8A99] mt-2.5 leading-relaxed font-semibold">

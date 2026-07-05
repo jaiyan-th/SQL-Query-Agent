@@ -41,7 +41,7 @@ export const QueryInput: React.FC<QueryInputProps> = ({
         </div>
         <div className="flex items-center gap-4">
           {/* Mode Selector Toggle */}
-          <div className="flex bg-[#0E1116] border border-[#252B36] rounded p-0.5 select-none font-mono text-[10px]">
+          <div className="flex bg-[var(--bg-base)] border border-[#252B36] rounded p-0.5 select-none font-mono text-[10px]">
             <button
               onClick={() => setQueryMode('generate')}
               disabled={disabled}
