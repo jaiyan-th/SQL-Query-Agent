@@ -1,6 +1,7 @@
 // Frontend authentication API client
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+import { API_BASE_URL as API_BASE } from './config';
+
 
 export interface User {
   id: number;

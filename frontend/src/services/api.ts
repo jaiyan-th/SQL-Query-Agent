@@ -3,7 +3,7 @@
  * SQLite upload mode: users upload .db/.sqlite/.sqlite3 files.
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+import { API_BASE_URL } from '../api/config';
 
 function getHeaders(): Record<string, string> {
   const token = localStorage.getItem('token');
@@ -169,4 +169,61 @@ export async function generateAndRun(question: string): Promise<GenerateAndRunRe
   });
   if (data.generated_sql && !data.sql) data.sql = data.generated_sql;
   return data;
+}
+
+// ─── Schema Browser & History ───────────────────────────────────────────────
+
+export interface SchemaTableColumn {
+  name: string;
+  type: string;
+  nullable: boolean;
+}
+
+export interface SchemaForeignKey {
+  columns: string[];
+  referred_table: string;
+  referred_columns: string[];
+}
+
+export interface SchemaTable {
+  table_name: string;
+  columns: SchemaTableColumn[];
+  primary_keys: string[];
+  foreign_keys: SchemaForeignKey[];
+  row_count: number;
+}
+
+export interface SchemaResponse {
+  tables: SchemaTable[];
+  database_type?: string;
+  workspace_id?: string;
+}
+
+export interface QueryHistoryItem {
+  id: number;
+  question: string;
+  generated_sql: string;
+  mode: string;
+  status: string;
+  created_at: string;
+  row_count?: number | null;
+  execution_time_ms?: number | null;
+  error_message?: string | null;
+  database_type?: string;
+  connection_name?: string;
+}
+
+export interface QueryHistoryResponse {
+  history: QueryHistoryItem[];
+  total: number;
+}
+
+/** Get tables and columns schema for the SQLite workspace. */
+export async function getSqliteSchema(): Promise<SchemaResponse> {
+  return apiFetch<SchemaResponse>('/api/sqlite/schema');
+}
+
+/** Get previous query execution history for the logged-in user. */
+export async function getQueryHistory(): Promise<QueryHistoryResponse> {
+  return apiFetch<QueryHistoryResponse>('/api/history');
 }

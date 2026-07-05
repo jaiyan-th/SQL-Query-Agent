@@ -11,19 +11,8 @@ import {
   ShieldAlert,
   Calendar
 } from 'lucide-react';
+import { getQueryHistory, type QueryHistoryItem } from '../../services/api';
 
-interface QueryHistoryItem {
-  id: number;
-  question: string;
-  generated_sql: string;
-  mode: string;
-  status: string;
-  execution_time_ms?: number;
-  created_at: string;
-  connection_name: string;
-  tablesUsed?: string;
-  error_message?: string;
-}
 
 export const HistoryPage: React.FC = () => {
   const [history, setHistory] = useState<QueryHistoryItem[]>([]);
@@ -41,21 +30,8 @@ export const HistoryPage: React.FC = () => {
     try {
       setLoading(true);
       setError('');
-      // The getHistory call is in services/api, wait, is it? Let's check api.ts or use a fetch.
-      // Wait, let's fetch directly to make sure we don't depend on missing api exports.
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'}/api/history`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      if (!res.ok) {
-        throw new Error('Failed to load query history');
-      }
-      const data = await res.json();
-      setHistory(data || []);
+      const data = await getQueryHistory();
+      setHistory(data.history || []);
     } catch (err: any) {
       setError(err.message || 'Failed to load history');
     } finally {
@@ -229,8 +205,9 @@ export const HistoryPage: React.FC = () => {
                     {/* Footer metadata details */}
                     <div className="flex flex-wrap items-center justify-between border-t border-[#252B36]/30 pt-4 mt-1 font-mono-code text-[10px] text-[#7E8A99] gap-2">
                       <div className="flex items-center gap-4">
-                        <span>Workspace: <strong className="text-[#E6E8EF]">{item.connection_name}</strong></span>
-                        <span>Tables: <strong className="text-[#E6E8EF]">{item.tablesUsed || 'sqlite_master'}</strong></span>
+                        <span>Workspace: <strong className="text-[#E6E8EF]">{item.connection_name || 'default'}</strong></span>
+                        <span>DB Type: <strong className="text-[#E6E8EF]">{item.database_type || 'sqlite'}</strong></span>
+
                       </div>
                       <div>
                         <span>Guardrails: <strong className="text-[#3ECF8E]">SELECT_ONLY enforced</strong></span>

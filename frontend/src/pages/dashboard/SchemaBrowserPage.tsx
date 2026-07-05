@@ -7,26 +7,8 @@ import {
   Columns,
   RefreshCw
 } from 'lucide-react';
+import { getSqliteSchema, type SchemaTable as TableSchema } from '../../services/api';
 
-interface ColumnSchema {
-  name: string;
-  type: string;
-  nullable: boolean;
-}
-
-interface ForeignKeySchema {
-  columns: string[];
-  referred_table: string;
-  referred_columns: string[];
-}
-
-interface TableSchema {
-  table_name: string;
-  columns: ColumnSchema[];
-  primary_keys: string[];
-  foreign_keys: ForeignKeySchema[];
-  row_count: number;
-}
 
 export const SchemaBrowserPage: React.FC = () => {
   const [tables, setTables] = useState<TableSchema[]>([]);
@@ -42,18 +24,7 @@ export const SchemaBrowserPage: React.FC = () => {
     try {
       setLoading(true);
       setError('');
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'}/api/sqlite/schema`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      if (!res.ok) {
-        throw new Error('Failed to introspect SQLite database schema');
-      }
-      const data = await res.json();
+      const data = await getSqliteSchema();
       const fetchedTables = data.tables || [];
       setTables(fetchedTables);
       
