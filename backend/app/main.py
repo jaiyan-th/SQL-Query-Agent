@@ -57,8 +57,12 @@ app.include_router(generate_and_run.router,  prefix="/api", tags=["Query Executi
 app.include_router(history.router,           prefix="/api", tags=["History"])
 app.include_router(suggestions.router,       prefix="/api", tags=["Suggestions"])
 
+from fastapi.responses import RedirectResponse
 
-
+@app.get("/")
+async def root_redirect():
+    """Redirect root path to API interactive documentation (/docs)."""
+    return RedirectResponse(url="/docs")
 # ── Lifecycle events ──────────────────────────────────────────
 @app.on_event("startup")
 async def startup_event():
