@@ -1,24 +1,15 @@
-"""
-Schema context retrieval from Qdrant using RAG.
-"""
 from typing import List, Dict, Any
 from app.rag.qdrant_client import get_qdrant_client
 from app.schemas import SchemaContext
 from app.config import settings
+from qdrant_client.http import models
 import logging
 
 logger = logging.getLogger(__name__)
 
-
 def format_schema_context_for_prompt(contexts: List[SchemaContext]) -> str:
     """
     Format schema contexts into a prompt-ready string.
-
-    Args:
-        contexts: List of SchemaContext objects
-
-    Returns:
-        Formatted schema context string
     """
     if not contexts:
         return "No relevant schema context found."
@@ -34,41 +25,40 @@ def format_schema_context_for_prompt(contexts: List[SchemaContext]) -> str:
 
     return "\n".join(lines)
 
-
 def retrieve_schema_context(
     question: str,
+    user_id: int,
+    connection_id: int,
     top_k: int = 3
 ) -> Dict[str, Any]:
     """
     Retrieve relevant schema context for a question using Qdrant Cloud.
-
-    Args:
-        question: Natural language question
-        top_k: Number of relevant schema chunks to retrieve
-
-    Returns:
-        Dict containing:
-            - context_text: formatted string prompt
-            - chunks: list of text chunks retrieved
-            - table_names: list of table names retrieved
-            - vector_store: "Qdrant"
-            - schema_contexts: List of SchemaContext Pydantic objects for API responses
+    Filters strictly by user_id and connection_id.
     """
     try:
         client = get_qdrant_client()
         col_name = settings.QDRANT_COLLECTION_NAME
 
-        logger.info("Generating embedding for the user question...")
+        logger.info(f"Generating query embedding for RAG schema lookup (user_id={user_id}, connection_id={connection_id})...")
         from fastembed import TextEmbedding
         encoder = TextEmbedding(model_name=settings.QDRANT_EMBEDDING_MODEL)
         embeddings = list(encoder.embed([question]))
         query_vector = embeddings[0]
 
-        logger.info(f"Querying Qdrant collection '{col_name}' for context...")
-        # Search Qdrant collection using the official query_points method.
+        logger.info(f"Querying Qdrant collection '{col_name}' with tenant isolating filters...")
+        
+        # Enforce multi-tenant access controls
+        query_filter = models.Filter(
+            must=[
+                models.FieldCondition(key="user_id", match=models.MatchValue(value=user_id)),
+                models.FieldCondition(key="connection_id", match=models.MatchValue(value=connection_id))
+            ]
+        )
+
         results = client.query_points(
             collection_name=col_name,
             query=query_vector,
+            query_filter=query_filter,
             limit=top_k
         )
 
@@ -79,7 +69,6 @@ def retrieve_schema_context(
         if results and results.points:
             for point in results.points:
                 payload = point.payload or {}
-                # Relevance score is the cosine similarity search score
                 relevance_score = point.score
                 content = payload.get("content", "")
                 table_name = payload.get("table_name", "unknown")
@@ -95,7 +84,7 @@ def retrieve_schema_context(
                     )
                 )
 
-        logger.info(f"Retrieved {len(schema_contexts)} schema contexts from Qdrant.")
+        logger.info(f"Retrieved {len(schema_contexts)} schema contexts from Qdrant for connection_id={connection_id}.")
         
         return {
             "context_text": format_schema_context_for_prompt(schema_contexts),
@@ -107,10 +96,4 @@ def retrieve_schema_context(
 
     except Exception as e:
         logger.error(f"Qdrant schema retrieval failed: {str(e)}")
-        return {
-            "context_text": "No relevant schema context found.",
-            "chunks": [],
-            "table_names": [],
-            "vector_store": "Qdrant",
-            "schema_contexts": []
-        }
+        raise Exception(f"Schema retrieval failed: {str(e)}")

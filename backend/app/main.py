@@ -39,16 +39,17 @@ app.add_middleware(
 )
 
 # ── Register all API routers ──────────────────────────────────
-from app.api import health, connection, rag, generate, generate_and_run, history, auth, suggestions
+from app.api import health, connections, rag, generate, generate_and_run, history, auth, suggestions
 
 app.include_router(health.router,            prefix="/api", tags=["Health"])
-app.include_router(connection.router,        prefix="/api", tags=["Connection"])
+app.include_router(connections.router,       prefix="/api", tags=["Connections"])
 app.include_router(auth.router,              prefix="/api", tags=["Authentication"])
 app.include_router(rag.router,               prefix="/api", tags=["RAG"])
 app.include_router(generate.router,          prefix="/api", tags=["Query Generation"])
 app.include_router(generate_and_run.router,  prefix="/api", tags=["Query Execution"])
 app.include_router(history.router,           prefix="/api", tags=["History"])
 app.include_router(suggestions.router,       prefix="/api", tags=["Suggestions"])
+
 
 
 # ── Lifecycle events ──────────────────────────────────────────

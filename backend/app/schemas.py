@@ -8,9 +8,6 @@ from datetime import datetime
 
 # ── Request Models ────────────────────────────────────────────
 
-class ConnectionTestRequest(BaseModel):
-    """Request to test database connection."""
-    database_url: Optional[str] = None
 
 
 class QueryRequest(BaseModel):
@@ -95,9 +92,60 @@ class QueryHistoryItem(BaseModel):
     question: str
     generated_sql: str
     mode: str
+    output_format: str
     status: str
-    created_at: datetime
+    row_count: Optional[int] = None
+    execution_time_ms: Optional[int] = None
     error_message: Optional[str] = None
+    created_at: datetime
+    database_type: Optional[str] = None
+    connection_name: Optional[str] = None
+
+
+class ConnectionTestRequest(BaseModel):
+    """Payload to test connection configuration."""
+    database_type: str
+    database_url: str
+
+
+class ConnectionTestResponse(BaseModel):
+    """Response returned for database connection tests."""
+    connected: bool
+    database_type: str
+    provider: str
+    masked_url: str
+    host: str
+    database_name: str
+    read_only_mode: bool = True
+
+
+class ConnectionSaveRequest(BaseModel):
+    """Payload to save database connection credentials."""
+    connection_name: str
+    database_type: str
+    database_url: str
+
+
+class ConnectionSaveResponse(BaseModel):
+    """Response returned after connection properties are encrypted and saved."""
+    saved: bool
+    connection_id: int
+    database_type: str
+    masked_url: str
+    host: str
+    database_name: str
+
+
+class ActiveConnectionResponse(BaseModel):
+    """Details of active database configurations."""
+    connection_id: int
+    connected: bool
+    database_type: str
+    provider: str
+    masked_url: str
+    host: str
+    database_name: str
+
 
 
 class QueryHistoryResponse(BaseModel):

@@ -1,107 +1,65 @@
-"""
-Schema ingestion into Qdrant.
-Converts database schema metadata into vector-searchable documents.
-"""
 import datetime
 import uuid
 import logging
 from typing import List, Dict, Any
-from app.db.schema_introspector import SchemaIntrospector
-from app.db.connection import get_engine
-from app.rag.qdrant_client import get_qdrant_client, ensure_collection, recreate_collection
+from sqlalchemy.engine import Engine
+from app.db.schema_introspect import SchemaIntrospector
+from app.rag.qdrant_client import get_qdrant_client, ensure_collection
 from qdrant_client.http import models
 from app.config import settings
 
 logger = logging.getLogger(__name__)
 
-
-def build_schema_document(schema: Dict[str, Any]) -> str:
-    """
-    Convert schema metadata into a text document for embedding.
-
-    Args:
-        schema: Schema dictionary from introspector
-
-    Returns:
-        Formatted schema document string
-    """
-    table_name = schema["table_name"]
-    columns = schema["columns"]
-    primary_keys = schema["primary_keys"]
-    foreign_keys = schema["foreign_keys"]
-
-    # Build document
-    doc_lines = [f"Table: {table_name}"]
-
-    # Add columns
-    doc_lines.append("\nColumns:")
-    for col in columns:
-        pk_marker = " (Primary Key)" if col["name"] in primary_keys else ""
-        nullable = "nullable" if col["nullable"] else "not nullable"
-        doc_lines.append(
-            f"  - {col['name']}: {col['type']}, {nullable}{pk_marker}"
-        )
-
-    # Add foreign keys
-    if foreign_keys:
-        doc_lines.append("\nRelationships:")
-        for fk in foreign_keys:
-            doc_lines.append(
-                f"  - {', '.join(fk['columns'])} references "
-                f"{fk['referred_table']}({', '.join(fk['referred_columns'])})"
-            )
-
-    return "\n".join(doc_lines)
-
-
-def ingest_schema(reset: bool = True) -> Dict[str, Any]:
+def ingest_schema(
+    engine: Engine,
+    user_id: int,
+    connection_id: int,
+    database_type: str,
+    reset: bool = True
+) -> Dict[str, Any]:
     """
     Introspect database schema and ingest into Qdrant Cloud.
-
-    Args:
-        reset: Whether to reset/recreate collection before ingestion
-
-    Returns:
-        Dict with ingestion statistics
+    Clears existing points matching the (user_id, connection_id) first.
     """
-    logger.info("Starting schema ingestion to Qdrant...")
+    logger.info(f"Starting schema ingestion for user_id={user_id}, connection_id={connection_id}...")
 
     try:
-        # Introspect schemas from PostgreSQL
-        introspector = SchemaIntrospector(get_engine())
+        # 1. Introspect schemas from the provided database engine
+        introspector = SchemaIntrospector(engine)
         schemas = introspector.get_all_schemas()
 
         if not schemas:
-            raise Exception("No tables found in PostgreSQL database")
+            raise Exception("No tables found in the connected database to index.")
 
-        # Get Qdrant client
+        # 2. Get Qdrant client
         client = get_qdrant_client()
         col_name = settings.QDRANT_COLLECTION_NAME
 
-        # Recreate or ensure collection exists
+        # Ensure collection exists
+        ensure_collection(col_name)
+
+        # 3. Clean up existing points for this specific user/connection to avoid duplicates
         if reset:
-            recreate_collection(col_name)
-        else:
-            ensure_collection(col_name)
+            logger.info(f"Clearing old schema vectors for connection_id={connection_id}")
+            client.delete(
+                collection_name=col_name,
+                points_selector=models.Filter(
+                    must=[
+                        models.FieldCondition(key="user_id", match=models.MatchValue(value=user_id)),
+                        models.FieldCondition(key="connection_id", match=models.MatchValue(value=connection_id))
+                    ]
+                )
+            )
 
         documents = []
         schema_list = []
 
         for schema in schemas:
-            if "error" in schema:
-                logger.warning(f"Skipping table {schema['table_name']}: {schema['error']}")
-                continue
-
-            table_name = schema["table_name"].lower()
-            if table_name in ["querygen_users", "querygen_history", "users"]:
-                logger.info(f"Excluding internal table {table_name} from RAG schema indexing")
-                continue
-
-            doc = build_schema_document(schema)
+            doc = introspector.build_schema_document(schema)
             documents.append(doc)
             schema_list.append(schema)
 
-        # Ingest into Qdrant Cloud if there are schemas
+        # 4. Generate embeddings and upsert points
         if documents:
             logger.info(f"Generating embeddings for {len(documents)} schema documents...")
             from fastembed import TextEmbedding
@@ -114,13 +72,17 @@ def ingest_schema(reset: bool = True) -> Dict[str, Any]:
                 table_name = schema["table_name"]
                 doc_id = f"table_{table_name}"
 
-                # Generate a valid UUID deterministically from table name
-                point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, table_name))
+                # Generate a valid UUID deterministically from connection_id and table_name
+                point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{connection_id}_{table_name.lower()}"))
 
-                # Build rich payload as requested by spec
+                # Build payload matching spec requirements
                 payload = {
-                    "doc_id": doc_id,
+                    "user_id": user_id,
+                    "connection_id": connection_id,
+                    "database_type": database_type,
                     "table_name": table_name,
+                    "document_type": "table_schema",
+                    "doc_id": doc_id,
                     "content": doc,
                     "columns": schema["columns"],
                     "primary_keys": schema["primary_keys"],

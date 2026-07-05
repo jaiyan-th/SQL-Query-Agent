@@ -3,27 +3,19 @@ LLM prompt templates for SQL generation.
 """
 from typing import Optional
 
-
 def build_sql_generation_prompt(
     question: str,
     schema_context: str,
+    database_type: str,
     previous_sql: Optional[str] = None,
     error_message: Optional[str] = None
 ) -> str:
     """
     Build prompt for SQL generation.
-    
-    Args:
-        question: Natural language question
-        schema_context: Retrieved schema context from RAG
-        previous_sql: Previous SQL that failed (for self-correction)
-        error_message: Database error message (for self-correction)
-        
-    Returns:
-        Formatted prompt string
     """
     
     base_prompt = f"""You are QueryGen AI, a safe and accurate SQL generation assistant.
+You are generating SQL for {database_type}. Use only the provided schema context. Do not invent tables or columns. Generate only safe SELECT or WITH SELECT queries.
 
 Your task is to convert natural language questions into valid SQL queries using ONLY the provided database schema context.
 
@@ -74,16 +66,9 @@ RESPOND WITH JSON ONLY. NO OTHER TEXT.
     
     return base_prompt
 
-
 def build_validation_prompt(sql: str) -> str:
     """
     Build prompt for SQL validation.
-    
-    Args:
-        sql: SQL query to validate
-        
-    Returns:
-        Validation prompt
     """
     return f"""Validate if this SQL query is safe (SELECT only):
 

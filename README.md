@@ -52,6 +52,22 @@ Natural language
 
 ---
 
+## 🏗️ System Architecture
+
+QueryGen AI uses a three-layer architecture:
+
+1. **Platform Database**:
+   Neon PostgreSQL stores authentication, encrypted user connection settings, and query history.
+2. **User Connected Database**:
+   Users can connect their own supported relational SQL databases such as PostgreSQL, MySQL, MariaDB, SQLite, or SQL Server. QueryGen AI reads schema metadata and executes safe SELECT-only queries directly on that connected database.
+3. **Vector Database**:
+   Qdrant stores schema embeddings for RAG. It does not store database passwords or actual table data.
+
+> [!IMPORTANT]
+> User database records are not copied into the platform database. QueryGen AI connects live to the user's database only for schema sync and safe read-only query execution.
+
+---
+
 ## ⚙️ Backend Setup & Configuration
 
 ### 1. Environment Variables
@@ -134,13 +150,17 @@ npm run build
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/api/health` | Backend health check (PostgreSQL + Qdrant status) |
-| `POST` | `/api/connection/test` | Test PostgreSQL connection |
+| `GET` | `/api/health` | Backend health check |
+| `POST` | `/api/connections/test` | Test database credentials (SELECT 1) |
+| `POST` | `/api/connections/save` | Encrypt and save database credentials |
+| `GET` | `/api/connections/active` | Get current active database properties |
 | `POST` | `/api/auth/signup` | Register a new user |
 | `POST` | `/api/auth/login` | Log in and receive a JWT token |
 | `GET` | `/api/auth/me` | Retrieve profile of the logged-in user |
-| `POST` | `/api/rag/ingest-schema` | Introspect schema → store in Qdrant Cloud |
-| `POST` | `/api/generate-query` | Function 1: Generate SQL (no execution) |
+| `POST` | `/api/rag/ingest-schema` | Introspect active database schema → store in Qdrant |
+| `GET` | `/api/rag/status` | Get RAG schema index status |
+| `POST` | `/api/generate-query` | Function 1: Generate SQL Only |
 | `POST` | `/api/generate-and-run` | Function 2: Generate + execute SQL |
-| `GET` | `/api/history` | Query history logs |
-| `GET` | `/api/suggestions` | Fetch context-specific suggestions |
+| `GET` | `/api/history` | Get query history logs |
+| `GET` | `/api/suggestions` | Fetch database schema-grounded suggestions |
+

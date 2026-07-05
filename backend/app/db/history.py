@@ -1,93 +1,92 @@
-"""
-Query history storage and retrieval.
-Stores in-memory history (can be extended to database).
-"""
 from datetime import datetime
-from typing import List, Dict, Any, Optional
+from typing import List, Optional
+from sqlalchemy.orm import Session
+from app.db.models import QueryHistory, Connection
 from app.schemas import QueryHistoryItem
-import logging
-
-logger = logging.getLogger(__name__)
-
-# In-memory history storage
-_query_history: List[Dict[str, Any]] = []
-_history_counter = 0
-
 
 def add_history_entry(
+    db: Session,
+    user_id: int,
+    connection_id: Optional[int],
     question: str,
     generated_sql: str,
     mode: str,
+    output_format: str,
     status: str,
+    row_count: Optional[int] = None,
+    execution_time_ms: Optional[int] = None,
     error_message: Optional[str] = None
 ) -> int:
     """
-    Add query to history.
-    
-    Args:
-        question: Natural language question
-        generated_sql: Generated SQL query
-        mode: "generate" or "execute"
-        status: "success", "error", "blocked"
-        error_message: Optional error message
-        
-    Returns:
-        Entry ID
+    Log a new query execution history entry in the platform Neon database.
     """
-    global _history_counter
-    
-    _history_counter += 1
-    
-    entry = {
-        "id": _history_counter,
-        "question": question,
-        "generated_sql": generated_sql,
-        "mode": mode,
-        "status": status,
-        "created_at": datetime.now(),
-        "error_message": error_message
-    }
-    
-    _query_history.append(entry)
-    logger.info(f"Added history entry #{_history_counter}")
-    
-    return _history_counter
+    try:
+        # If there is no connection_id provided, find the active connection for the user
+        conn_id = connection_id
+        if not conn_id:
+            active_conn = db.query(Connection).filter(
+                Connection.user_id == user_id, 
+                Connection.is_active == True
+            ).first()
+            if active_conn:
+                conn_id = active_conn.id
 
-
-def get_history(limit: int = 50) -> List[QueryHistoryItem]:
-    """
-    Get query history.
-    
-    Args:
-        limit: Maximum number of entries to return
-        
-    Returns:
-        List of QueryHistoryItem objects
-    """
-    # Return most recent first
-    recent_history = sorted(
-        _query_history,
-        key=lambda x: x["created_at"],
-        reverse=True
-    )[:limit]
-    
-    return [
-        QueryHistoryItem(
-            id=entry["id"],
-            question=entry["question"],
-            generated_sql=entry["generated_sql"],
-            mode=entry["mode"],
-            status=entry["status"],
-            created_at=entry["created_at"],
-            error_message=entry.get("error_message")
+        entry = QueryHistory(
+            user_id=user_id,
+            connection_id=conn_id,
+            question=question,
+            generated_sql=generated_sql,
+            mode=mode,
+            output_format=output_format,
+            status=status,
+            row_count=row_count,
+            execution_time_ms=execution_time_ms,
+            error_message=error_message
         )
-        for entry in recent_history
-    ]
+        db.add(entry)
+        db.commit()
+        db.refresh(entry)
+        return entry.id
+    except Exception as e:
+        db.rollback()
+        raise Exception(f"Failed to record query history entry: {str(e)}")
 
+def get_history(db: Session, user_id: int, limit: int = 50) -> List[QueryHistoryItem]:
+    """
+    Fetch query history logs for the active user, including connection metadata.
+    """
+    results = db.query(QueryHistory, Connection.connection_name, Connection.database_type)\
+        .outerjoin(Connection, QueryHistory.connection_id == Connection.id)\
+        .filter(QueryHistory.user_id == user_id)\
+        .order_by(QueryHistory.created_at.desc())\
+        .limit(limit)\
+        .all()
 
-def clear_history():
-    """Clear all history entries."""
-    global _query_history, _history_counter
-    _query_history = []
-    _history_counter = 0
-    logger.info("Cleared query history")
+    items = []
+    for history, conn_name, db_type in results:
+        items.append(
+            QueryHistoryItem(
+                id=history.id,
+                question=history.question,
+                generated_sql=history.generated_sql,
+                mode=history.mode,
+                output_format=history.output_format,
+                status=history.status,
+                row_count=history.row_count,
+                execution_time_ms=history.execution_time_ms,
+                error_message=history.error_message,
+                created_at=history.created_at,
+                database_type=db_type or "unknown",
+                connection_name=conn_name or "Unknown Connection"
+            )
+        )
+    return items
+
+def clear_history(db: Session, user_id: int):
+    """Clear query history entries for the specified user."""
+    try:
+        db.query(QueryHistory).filter(QueryHistory.user_id == user_id).delete()
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise

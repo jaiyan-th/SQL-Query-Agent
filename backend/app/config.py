@@ -31,17 +31,19 @@ class Settings(BaseSettings):
     # Qdrant Vector Database Configuration
     QDRANT_URL: str = ""
     QDRANT_API_KEY: str = ""
-    QDRANT_COLLECTION_NAME: str = "querygen_schema"
+    QDRANT_COLLECTION_NAME: str = "querygen_schema_vectors"
     QDRANT_EMBEDDING_MODEL: str = "BAAI/bge-small-en-v1.5"
 
     # Query Execution Limits
     DEFAULT_LIMIT: int = 50
     MAX_ROWS: int = 100
-    QUERY_TIMEOUT_SECONDS: int = 10
+    QUERY_TIMEOUT_SECONDS: int = 30
     MAX_RETRY_ATTEMPTS: int = 2
 
     # Security
     ALLOW_WRITE: bool = False
+    CONNECTION_ENCRYPTION_KEY: str = "0wbKLfHXFuKk0MgyCAlOvaiztfowtgrBKEAtoQE_B90="
+
 
     @field_validator("DATABASE_URL")
     @classmethod

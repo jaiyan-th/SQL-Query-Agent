@@ -1,139 +1,126 @@
-"""
-Service for Function 1: Query Generation Mode.
-Generates SQL without execution.
-"""
-from typing import Dict, Any
+from typing import Dict, Any, List
+from sqlalchemy.orm import Session
 from app.schemas import GenerateQueryResponse, SchemaContext
 from app.rag.retriever import retrieve_schema_context
 from app.llm.client import get_llm_client
 from app.llm.prompts import build_sql_generation_prompt
 from app.db.history import add_history_entry
+from app.sql.guardrails import validate_and_sanitize
 import logging
 
 logger = logging.getLogger(__name__)
 
-
-def validate_sql_safety_basic(sql: str) -> Dict[str, Any]:
+def generate_query(
+    db: Session,
+    user_id: int,
+    connection_id: int,
+    database_type: str,
+    question: str
+) -> GenerateQueryResponse:
     """
-    Basic safety validation without execution.
-    
-    Args:
-        sql: SQL query to validate
-        
-    Returns:
-        Dict with is_safe, reason, and sanitized_sql
+    Function 1: Generate SQL query using retrieved RAG context and target dialect.
     """
-    sql_upper = sql.upper().strip()
-    
-    # Check for dangerous keywords
-    dangerous_keywords = [
-        "INSERT", "UPDATE", "DELETE", "DROP", "ALTER", 
-        "TRUNCATE", "CREATE", "REPLACE", "MERGE", 
-        "GRANT", "REVOKE", "PRAGMA", "ATTACH", "DETACH",
-        "EXEC", "EXECUTE", "CALL"
-    ]
-    
-    for keyword in dangerous_keywords:
-        if f" {keyword} " in f" {sql_upper} " or sql_upper.startswith(f"{keyword} "):
-            return {
-                "is_safe": False,
-                "reason": f"Dangerous keyword detected: {keyword}",
-                "sanitized_sql": sql
-            }
-    
-    # Check if it's a SELECT or WITH...SELECT
-    if not (sql_upper.startswith("SELECT") or sql_upper.startswith("WITH")):
-        return {
-            "is_safe": False,
-            "reason": "Query must start with SELECT or WITH",
-            "sanitized_sql": sql
-        }
-    
-    return {
-        "is_safe": True,
-        "reason": "Query passes basic safety checks",
-        "sanitized_sql": sql
-    }
-
-
-def generate_query(question: str) -> GenerateQueryResponse:
-    """
-    Function 1: Generate SQL query without execution.
-    
-    Args:
-        question: Natural language question
-        
-    Returns:
-        GenerateQueryResponse with SQL and metadata
-    """
-    logger.info(f"Generating query for: {question}")
+    logger.info(f"Generating query (user_id={user_id}, connection_id={connection_id}, type={database_type}) for: {question}")
     
     try:
-        # Step 1: Retrieve schema context from RAG
-        retrieval_result = retrieve_schema_context(question, top_k=3)
+        # 1. Retrieve schema context from Qdrant RAG
+        retrieval_result = retrieve_schema_context(
+            question=question,
+            user_id=user_id,
+            connection_id=connection_id,
+            top_k=3
+        )
         schema_contexts = retrieval_result["schema_contexts"]
         
         if not schema_contexts:
+            # Re-generate or return error if schemas are empty
+            err_msg = "No schema context is indexed for this database connection. Please sync schema first."
+            add_history_entry(
+                db=db,
+                user_id=user_id,
+                connection_id=connection_id,
+                question=question,
+                generated_sql="",
+                mode="generate",
+                output_format="table",
+                status="blocked",
+                error_message=err_msg
+            )
             return GenerateQueryResponse(
                 status="error",
                 sql="",
-                explanation="No relevant schema found. Please ingest schema first.",
+                explanation=err_msg,
                 tables_used=[],
                 confidence=0.0,
-                safety_status="error",
+                safety_status="blocked",
                 schema_context=[],
                 needs_clarification=True,
-                clarification_question="Could not find relevant database schema. Has the schema been ingested?"
+                clarification_question=err_msg
             )
         
-        # Step 2: Build prompt with schema context
+        # 2. Build LLM prompt containing dialect info and schema context
         schema_context_str = retrieval_result["context_text"]
-        prompt = build_sql_generation_prompt(question, schema_context_str)
+        prompt = build_sql_generation_prompt(
+            question=question,
+            schema_context=schema_context_str,
+            database_type=database_type
+        )
         
-        # Step 3: Generate SQL using LLM
+        # 3. Request LLM SQL generation
         llm_client = get_llm_client()
         llm_response = llm_client.generate_sql(prompt)
         
-        # Step 4: Validate safety (basic check, no execution)
-        safety_check = validate_sql_safety_basic(llm_response.sql)
+        # 4. Enforce strict SQL guardrails validation
+        safety_check = validate_and_sanitize(llm_response.sql)
         
-        # Step 5: Log to history
+        # 5. Log transaction audit to platform Neon history
         add_history_entry(
+            db=db,
+            user_id=user_id,
+            connection_id=connection_id,
             question=question,
             generated_sql=llm_response.sql,
             mode="generate",
-            status="success" if safety_check["is_safe"] else "unsafe"
+            output_format="table",
+            status="success" if safety_check["is_safe"] else "blocked",
+            error_message=None if safety_check["is_safe"] else safety_check["reason"]
         )
         
-        # Step 6: Return response
         return GenerateQueryResponse(
-            status="success",
+            status="success" if safety_check["is_safe"] else "blocked",
             sql=llm_response.sql,
-            explanation=llm_response.explanation,
+            explanation=llm_response.explanation if safety_check["is_safe"] else safety_check["reason"],
             tables_used=llm_response.tables_used,
             confidence=llm_response.confidence,
-            safety_status="safe" if safety_check["is_safe"] else "unsafe",
+            safety_status="safe" if safety_check["is_safe"] else "blocked",
             schema_context=schema_contexts,
             needs_clarification=llm_response.needs_clarification,
             clarification_question=llm_response.clarification_question
         )
     
     except Exception as e:
-        logger.error(f"Query generation failed: {str(e)}")
+        logger.error(f"Query generation pipeline failure: {str(e)}")
         
-        # Log error to history
-        add_history_entry(
-            question=question,
-            generated_sql="",
-            mode="generate",
-            status="error",
-            error_message=str(e)
-        )
-        
+        # Log failure to history
+        try:
+            add_history_entry(
+                db=db,
+                user_id=user_id,
+                connection_id=connection_id,
+                question=question,
+                generated_sql="",
+                mode="generate",
+                output_format="table",
+                status="error",
+                error_message=str(e)
+            )
+        except Exception:
+            pass
+            
         return GenerateQueryResponse(
             status="error",
             sql="",
-            explanation=f"Failed to generate query: {str(e)}",
+            explanation=f"Query generation failed: {str(e)}",
             tables_used=[],
             confidence=0.0,
             safety_status="error",

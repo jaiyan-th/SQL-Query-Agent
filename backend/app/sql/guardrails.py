@@ -128,7 +128,7 @@ def validate_sql_guardrails(sql: str) -> Dict[str, Any]:
             }
     
     # Step 6.5: Block query access to internal schema tables
-    internal_tables = ["QUERYGEN_USERS", "QUERYGEN_HISTORY", "USERS"]
+    internal_tables = ["QUERYGEN_USERS", "QUERYGEN_CONNECTIONS", "QUERYGEN_HISTORY", "USERS"]
     for table in internal_tables:
         pattern = r'\b' + table + r'\b'
         if re.search(pattern, sql_upper):
@@ -137,6 +137,7 @@ def validate_sql_guardrails(sql: str) -> Dict[str, Any]:
                 "reason": f"Access to internal table is restricted: {table.lower()}",
                 "sanitized_sql": sanitized_sql
             }
+
 
     # Step 7: Check ALLOW_WRITE setting
     if not settings.ALLOW_WRITE:

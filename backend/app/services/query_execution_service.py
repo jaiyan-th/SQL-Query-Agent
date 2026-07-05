@@ -1,12 +1,7 @@
-"""
-Service for Function 2: Generate and Execute Mode.
-Extends Function 1 with guardrail validation, LIMIT injection, and safe execution.
-
-CRITICAL: Function 2 always calls Function 1 internally.
-There is exactly ONE SQL generation pipeline.
-"""
 import time
 from typing import Dict, Any, List, Optional
+from sqlalchemy.orm import Session
+from sqlalchemy.engine import Engine
 from app.schemas import GenerateAndRunResponse, SchemaContext
 from app.services.query_generation_service import generate_query
 from app.services.output_format_service import detect_and_clean_format
@@ -24,34 +19,26 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
 def self_correct_and_retry(
     question: str,
     failed_sql: str,
     error_message: str,
     schema_contexts: list,
+    database_type: str,
     attempt: int
 ) -> Dict[str, Any]:
     """
     Self-correction loop for failed SQL execution.
-
-    Args:
-        question: Original natural language question
-        failed_sql: SQL that failed execution
-        error_message: Database error message
-        schema_contexts: Retrieved schema contexts
-        attempt: Current attempt number
-
-    Returns:
-        Dict with corrected SQL or error
+    Generates a corrected query based on the execution error.
     """
-    logger.info(f"Self-correction attempt {attempt}")
+    logger.info(f"Self-correction attempt {attempt} for dialect {database_type}")
 
     try:
         schema_context_str = format_schema_context_for_prompt(schema_contexts)
         prompt = build_sql_generation_prompt(
             question=question,
             schema_context=schema_context_str,
+            database_type=database_type,
             previous_sql=failed_sql,
             error_message=error_message
         )
@@ -72,20 +59,20 @@ def self_correct_and_retry(
             "error": str(e)
         }
 
-
-def generate_and_execute(question: str, request_format: str = "auto") -> GenerateAndRunResponse:
+def generate_and_execute(
+    db: Session,
+    user_id: int,
+    connection_id: int,
+    database_type: str,
+    engine: Engine,
+    question: str,
+    request_format: str = "auto"
+) -> GenerateAndRunResponse:
     """
-    Function 2: Generate SQL via Function 1, validate, inject LIMIT, execute on PostgreSQL,
+    Function 2: Generate SQL via Function 1, validate, inject LIMIT, execute on user database live,
     and format output according to the detected or requested format (table, chart, text, report, analysis).
-
-    Args:
-        question: Natural language question
-        request_format: Output format requested in the API payload (e.g. "auto")
-
-    Returns:
-        GenerateAndRunResponse with SQL, rows, columns, execution_time_ms, and formatting outputs.
     """
-    logger.info(f"Generate and execute for: {question} (requested format: {request_format})")
+    logger.info(f"Generate and execute (user_id={user_id}, connection_id={connection_id}) for: {question} (requested format: {request_format})")
 
     # ── Step 0: Detect output format intent and clean question ──
     cleaned_question, output_format = detect_and_clean_format(question, request_format)
@@ -93,13 +80,23 @@ def generate_and_execute(question: str, request_format: str = "auto") -> Generat
 
     try:
         # ── Step 1: Call Function 1 to generate SQL ──────────────
-        gen_response = generate_query(cleaned_question)
+        gen_response = generate_query(
+            db=db,
+            user_id=user_id,
+            connection_id=connection_id,
+            database_type=database_type,
+            question=cleaned_question
+        )
 
         if gen_response.status != "success":
             query_id = add_history_entry(
+                db=db,
+                user_id=user_id,
+                connection_id=connection_id,
                 question=question,
                 generated_sql="",
                 mode="execute",
+                output_format=output_format,
                 status="failed",
                 error_message="SQL generation failed"
             )
@@ -126,10 +123,15 @@ def generate_and_execute(question: str, request_format: str = "auto") -> Generat
 
         if gen_response.safety_status != "safe":
             query_id = add_history_entry(
+                db=db,
+                user_id=user_id,
+                connection_id=connection_id,
                 question=question,
                 generated_sql=gen_response.sql,
                 mode="execute",
-                status="unsafe"
+                output_format=output_format,
+                status="blocked",
+                error_message="Generated SQL failed safety check"
             )
             return GenerateAndRunResponse(
                 status="error",
@@ -159,17 +161,19 @@ def generate_and_execute(question: str, request_format: str = "auto") -> Generat
         validation = validate_and_sanitize(current_sql)
         guardrail_report = {
             "is_safe": validation["is_safe"],
-            "reason": validation.get("reason"),
-            "blocked_keywords": validation.get("blocked_keywords", []),
-            "has_semicolon": validation.get("has_semicolon", False)
+            "reason": validation.get("reason")
         }
 
         if not validation["is_safe"]:
             query_id = add_history_entry(
+                db=db,
+                user_id=user_id,
+                connection_id=connection_id,
                 question=question,
                 generated_sql=current_sql,
                 mode="execute",
-                status="unsafe",
+                output_format=output_format,
+                status="blocked",
                 error_message=validation["reason"]
             )
             return GenerateAndRunResponse(
@@ -202,10 +206,10 @@ def generate_and_execute(question: str, request_format: str = "auto") -> Generat
 
         for attempt in range(1, max_attempts + 1):
             try:
-                logger.info(f"Execution attempt {attempt}")
+                logger.info(f"Execution attempt {attempt} on user database engine")
 
                 exec_start = time.time()
-                result = execute_query(safe_sql)
+                result = execute_query(engine, safe_sql)
                 exec_time_ms = round((time.time() - exec_start) * 1000, 2)
 
                 columns = result["columns"]
@@ -233,7 +237,7 @@ def generate_and_execute(question: str, request_format: str = "auto") -> Generat
                 elif output_format == "analysis":
                     analysis = format_result(cleaned_question, safe_sql, columns, rows, "analysis")
                 
-                # Populate default text/report/analysis silently in the background for rich UX if needed
+                # Populate default fallback text/report/analysis silently for rich UX
                 if not text_response and output_format != "bar_chart" and output_format != "pie_chart":
                     text_response = build_deterministic_text(cleaned_question, columns, rows)
                 if not report:
@@ -242,10 +246,16 @@ def generate_and_execute(question: str, request_format: str = "auto") -> Generat
                     analysis = build_deterministic_analysis(cleaned_question, columns, rows)
 
                 query_id = add_history_entry(
+                    db=db,
+                    user_id=user_id,
+                    connection_id=connection_id,
                     question=question,
                     generated_sql=safe_sql,
                     mode="execute",
-                    status="success"
+                    output_format=output_format,
+                    status="success",
+                    row_count=row_count,
+                    execution_time_ms=int(exec_time_ms)
                 )
 
                 return GenerateAndRunResponse(
@@ -278,6 +288,7 @@ def generate_and_execute(question: str, request_format: str = "auto") -> Generat
                         failed_sql=safe_sql,
                         error_message=last_error,
                         schema_contexts=gen_response.schema_context,
+                        database_type=database_type,
                         attempt=attempt
                     )
 
@@ -298,10 +309,14 @@ def generate_and_execute(question: str, request_format: str = "auto") -> Generat
 
         # ── All attempts exhausted ────────────────────────────────
         query_id = add_history_entry(
+            db=db,
+            user_id=user_id,
+            connection_id=connection_id,
             question=question,
             generated_sql=safe_sql,
             mode="execute",
-            status="failed",
+            output_format=output_format,
+            status="error",
             error_message=last_error
         )
 
@@ -347,7 +362,6 @@ def generate_and_execute(question: str, request_format: str = "auto") -> Generat
             safety_status="error",
             error_message=str(e)
         )
-
 
 def build_deterministic_text(question: str, columns: List[str], rows: List[List[Any]]) -> str:
     """Helper fallback to build quick summaries without circular imports."""
