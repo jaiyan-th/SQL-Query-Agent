@@ -1,0 +1,92 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --terminal-ink: #0E1116;      /* near-black graphite background */
+  --trace-paper: #F3F1EA;       /* warm off-white content panel */
+  --schema-cyan: #4FD1C5;       /* RAG/schema-grounding accent */
+  --query-violet: #8B7CF6;      /* LLM generation accent */
+  --guardrail-amber: #F5B942;   /* validation/guardrail state */
+  --safe-signal: #3ECF8E;       /* executed-safely / success state */
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, sans-serif;
+  background-color: var(--terminal-ink);
+  color: var(--trace-paper);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Custom developer-themed typography & utilities */
+.font-display {
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.font-sans-ui {
+  font-family: 'Inter', -apple-system, sans-serif;
+}
+
+.font-mono-code {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.terminal-panel {
+  background-color: #161A22;
+  border: 1px solid #2A303C;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.terminal-header {
+  background-color: #1A1F29;
+  border-bottom: 1px solid #2A303C;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-top-left-radius: 7px;
+  border-top-right-radius: 7px;
+}
+
+.terminal-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.terminal-dot.red { background-color: #EC5F5B; }
+.terminal-dot.yellow { background-color: #F5B942; }
+.terminal-dot.green { background-color: #3ECF8E; }
+
+/* Custom animation for typing cursor */
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+.cursor-blink::after {
+  content: '_';
+  animation: blink 1s step-start infinite;
+  color: var(--schema-cyan);
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #161A22;
+}
+::-webkit-scrollbar-thumb {
+  background: #2D3748;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #4A5568;
+}

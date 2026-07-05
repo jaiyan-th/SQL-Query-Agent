@@ -1,0 +1,77 @@
+version: '3.8'
+
+# ============================================================
+# QueryGen AI — Production Docker Compose
+# ============================================================
+# Usage:
+#   cp .env.example .env      # Fill in your API keys
+#   docker-compose up -d --build
+#
+# Note: DATABASE_URL in the backend service uses the bundled
+# postgres container for local docker testing only.
+# For production, point DATABASE_URL to Neon/Render.
+# ============================================================
+
+services:
+  # PostgreSQL Database (for local Docker testing)
+  postgres:
+    image: postgres:15-alpine
+    container_name: querygen-postgres
+    environment:
+      POSTGRES_USER: querygen
+      POSTGRES_PASSWORD: querygen_password
+      POSTGRES_DB: querygen
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U querygen"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # FastAPI Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: querygen-backend
+    environment:
+      APP_NAME: "QueryGen AI"
+      APP_ENV: "production"
+      LLM_PROVIDER: "groq"
+      GROQ_API_KEY: "${GROQ_API_KEY}"
+      GEMINI_API_KEY: "${GEMINI_API_KEY}"
+      DATABASE_URL: "postgresql://querygen:querygen_password@postgres:5432/querygen"
+      QDRANT_URL: "${QDRANT_URL}"
+      QDRANT_API_KEY: "${QDRANT_API_KEY}"
+      QDRANT_COLLECTION_NAME: "${QDRANT_COLLECTION_NAME}"
+      QDRANT_EMBEDDING_MODEL: "${QDRANT_EMBEDDING_MODEL}"
+      DEFAULT_LIMIT: 50
+      MAX_ROWS: 100
+      QUERY_TIMEOUT_SECONDS: 10
+      MAX_RETRY_ATTEMPTS: 2
+      ALLOW_WRITE: "false"
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: "http://localhost:8000"
+    container_name: querygen-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

@@ -1,0 +1,6 @@
+{
+  "name": "QueryGen AI",
+  "description": "Schema-Aware RAG-Powered Natural Language to SQL Agent",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
