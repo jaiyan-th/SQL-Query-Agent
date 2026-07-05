@@ -75,11 +75,21 @@ export const Topbar: React.FC = () => {
             
             {dropdownOpen && (
               <div className="absolute right-0 mt-2 w-56 rounded-[6px] bg-[#151922] border border-[#252B36] shadow-xl py-2 z-50 text-left font-mono-code text-[11px]">
-                <div className="px-4 py-2 border-b border-[#252B36]/50">
-                  <p className="text-[#E6E8EF] font-bold font-sans-ui text-xs">{user.full_name}</p>
-                  <p className="text-[#7E8A99] mt-0.5">{user.email}</p>
-                  <p className="text-[#8B7CF6] mt-1 text-[9px] uppercase font-bold tracking-wider">{user.role}</p>
+                <div className="px-4 py-3 border-b border-[#252B36]/50 flex flex-col gap-1.5 font-mono text-[10px]">
+                  <div className="flex items-start gap-1">
+                    <span className="text-[#7E8A99] uppercase font-bold tracking-wider w-12 shrink-0">Name:</span>
+                    <span className="text-[#E6E8EF] font-bold">{user.full_name}</span>
+                  </div>
+                  <div className="flex items-start gap-1">
+                    <span className="text-[#7E8A99] uppercase font-bold tracking-wider w-12 shrink-0">Email:</span>
+                    <span className="text-[#B8C0CC] break-all">{user.email}</span>
+                  </div>
+                  <div className="flex items-start gap-1">
+                    <span className="text-[#7E8A99] uppercase font-bold tracking-wider w-12 shrink-0">Role:</span>
+                    <span className="text-[#8B7CF6] font-bold uppercase tracking-wider">{user.role}</span>
+                  </div>
                 </div>
+
                 <Link 
                   to="/dashboard/settings" 
                   onClick={() => setDropdownOpen(false)}
