@@ -2,7 +2,7 @@ import React from 'react';
 
 interface ResultTableProps {
   columns: string[];
-  rows: any[][];
+  rows: any[];
   rowCount: number;
 }
 
@@ -37,11 +37,14 @@ export const ResultTable: React.FC<ResultTableProps> = ({ columns, rows, rowCoun
           <tbody className="divide-y divide-[#2A303C] bg-[#161A22]/20">
             {rows.map((row, rowIdx) => (
               <tr key={rowIdx} className="hover:bg-[#0E1116] transition-colors">
-                {row.map((cell, cellIdx) => (
-                  <td key={cellIdx} className="px-4 py-2 whitespace-nowrap text-[#F3F1EA] border-r border-[#2A303C] last:border-r-0">
-                    {cell !== null && cell !== undefined ? String(cell) : '-'}
-                  </td>
-                ))}
+                {columns.map((col, colIdx) => {
+                  const cell = row[col];
+                  return (
+                    <td key={colIdx} className="px-4 py-2 whitespace-nowrap text-[#F3F1EA] border-r border-[#2A303C] last:border-r-0">
+                      {cell !== null && cell !== undefined ? String(cell) : '-'}
+                    </td>
+                  );
+                })}
               </tr>
             ))}
           </tbody>

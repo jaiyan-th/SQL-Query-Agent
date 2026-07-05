@@ -38,36 +38,35 @@ export interface GenerateQueryRequest {
 }
 
 export interface GenerateQueryResponse {
-  status: string;
+  mode: string;
+  question: string;
+  generated_sql: string;
   sql: string;
   explanation: string;
   tables_used: string[];
   confidence: number;
+  rag_context_used: boolean;
+  guardrail_status: string;
   safety_status: string;
+  executed: boolean;
   schema_context: SchemaContext[];
-  needs_clarification?: boolean;
-  clarification_question?: string | null;
 }
 
 export interface GenerateAndRunResponse {
-  status: string;
+  mode: string;
+  question: string;
+  generated_sql: string;
   sql: string;
   explanation: string;
   columns: string[];
-  rows: any[][];
+  rows: any[];
   row_count: number;
-  execution_status: string;
   execution_time_ms?: number | null;
-  output_format?: string;
-  chart_config?: any;
-  text_response?: string;
-  report?: string;
-  analysis?: string;
-  guardrail_report?: any;
-  schema_context: SchemaContext[];
+  rag_context_used: boolean;
+  guardrail_status: string;
   safety_status: string;
-  error_message?: string | null;
-  query_id?: number | null;
+  executed: boolean;
+  schema_context: SchemaContext[];
 }
 
 export interface QueryHistoryItem {
@@ -77,7 +76,11 @@ export interface QueryHistoryItem {
   mode: string;
   status: string;
   created_at: string;
+  row_count?: number | null;
+  execution_time_ms?: number | null;
   error_message?: string | null;
+  database_type?: string;
+  connection_name?: string;
 }
 
 export interface QueryHistoryResponse {
@@ -110,7 +113,13 @@ class ApiClient {
       throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
     }
 
-    return response.json();
+    const data = await response.json();
+    if (data && typeof data === 'object') {
+      if ('generated_sql' in data && !('sql' in data)) {
+        (data as any).sql = (data as any).generated_sql;
+      }
+    }
+    return data as T;
   }
 
   async checkHealth(): Promise<HealthResponse> {

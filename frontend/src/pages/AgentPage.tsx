@@ -23,7 +23,6 @@ export const AgentPage: React.FC = () => {
   
   // Console inputs & outputs
   const [question, setQuestion] = useState('');
-  const [outputFormat, setOutputFormat] = useState('auto');
   const [mode, setMode] = useState<'generate' | 'execute'>('execute');
   const [queryLoading, setQueryLoading] = useState(false);
   const [queryResponse, setQueryResponse] = useState<any>(null);
@@ -118,9 +117,7 @@ export const AgentPage: React.FC = () => {
       setQueryResponse(null);
 
       const endpoint = mode === 'generate' ? '/api/generate-query' : '/api/generate-and-run';
-      const bodyPayload = mode === 'generate' 
-        ? { question: question.trim() }
-        : { question: question.trim(), output_format: outputFormat };
+      const bodyPayload = { question: question.trim() };
 
       const res = await fetch(`${API_BASE}${endpoint}`, {
         method: 'POST',
@@ -141,21 +138,8 @@ export const AgentPage: React.FC = () => {
     }
   };
 
-  const handleFormatChipClick = (formatKey: string) => {
-    setOutputFormat(formatKey);
-    if (mode === 'generate') {
-      setMode('execute');
-    }
-  };
-
   const handleSuggestionClick = (s: any) => {
     setQuestion(s.question);
-    if (s.output_format) {
-      setOutputFormat(s.output_format);
-      if (s.output_format !== 'table' && s.output_format !== 'auto') {
-        setMode('execute');
-      }
-    }
   };
 
   const pipelineStepsF1 = [
@@ -205,16 +189,6 @@ export const AgentPage: React.FC = () => {
     );
   }
 
-  const formatOptions = [
-    { key: 'auto', label: 'Auto' },
-    { key: 'table', label: 'Table' },
-    { key: 'bar_chart', label: 'Bar Chart' },
-    { key: 'pie_chart', label: 'Pie Chart' },
-    { key: 'text', label: 'Text Summary' },
-    { key: 'report', label: 'Report' },
-    { key: 'analysis', label: 'Analysis' }
-  ];
-
   return (
     <DashboardLayout>
       <div className="p-8 max-w-7xl mx-auto flex flex-col gap-6 text-left">
@@ -251,7 +225,7 @@ export const AgentPage: React.FC = () => {
             SQL Query Agent Console
           </h2>
           <p className="text-xs text-slate-400">
-            Generate dialect-specific SQL, execute SELECT queries safely under secure guardrails, and output results as tables, charts, text, or reports.
+            Generate SQL from natural language or execute safe read-only queries on your connected database.
           </p>
         </div>
 
@@ -271,7 +245,7 @@ export const AgentPage: React.FC = () => {
             </div>
             <h4 className="text-xs font-bold text-[#F3F1EA]">Generate SQL Only</h4>
             <p className="text-[10px] text-slate-500 mt-1">
-              Generates dialect-specific SQL using Qdrant schemas. Strictly does not execute commands.
+              Convert a natural language question into SQL using RAG. This mode only returns the generated query and does not execute it.
             </p>
           </div>
 
@@ -289,7 +263,7 @@ export const AgentPage: React.FC = () => {
             </div>
             <h4 className="text-xs font-bold text-[#F3F1EA]">Generate & Execute</h4>
             <p className="text-[10px] text-slate-500 mt-1">
-              Generates SQL, validates guardrails, executes safe SELECT queries on your connected database, and formats results.
+              Generate SQL using the same RAG pipeline, validate it, execute safe SELECT queries on your connected database, and show the result table.
             </p>
           </div>
         </div>
@@ -298,7 +272,7 @@ export const AgentPage: React.FC = () => {
         <div className="bg-[#161A22] border border-[#2A303C] rounded-[10px] p-6 shadow-md flex flex-col gap-4">
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2 font-mono text-xs text-slate-500 mb-1">
-              <span>Terminal Query Interface</span>
+              <span>Natural Language Question</span>
             </div>
             
             <div className="relative bg-[#0E1116] border border-[#2A303C] rounded p-3 flex gap-2 items-start focus-within:ring-1 focus-within:ring-[#4FD1C5]">
@@ -306,34 +280,10 @@ export const AgentPage: React.FC = () => {
               <textarea
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
-                placeholder="Ask your database, e.g. Show top 5 products by sales as bar chart"
-                className="w-full bg-transparent border-none outline-none text-xs text-[#F3F1EA] font-mono resize-none h-16 mt-1"
+                placeholder="Example: Show all students from CSE department"
+                className="w-full bg-transparent border-none outline-none text-xs text-[#F3F1EA] font-mono h-16 mt-1 resize-none"
                 disabled={queryLoading}
               />
-            </div>
-          </div>
-
-          {/* Output Format Selectors */}
-          <div className="flex flex-col gap-2">
-            <span className="text-slate-500 font-bold uppercase text-[9px] tracking-wider">Output Format Selection</span>
-            <div className="flex flex-wrap gap-2">
-              {formatOptions.map((opt) => {
-                const isActive = outputFormat === opt.key && mode === 'execute';
-                return (
-                  <button
-                    key={opt.key}
-                    onClick={() => handleFormatChipClick(opt.key)}
-                    disabled={mode === 'generate'}
-                    className={`px-3 py-1 rounded-full text-[10px] font-mono border transition-all ${
-                      isActive
-                        ? 'border-[#3ECF8E] bg-[#3ECF8E]/10 text-[#3ECF8E] font-bold'
-                        : 'border-[#2A303C] bg-[#0E1116] text-slate-400 hover:text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                );
-              })}
             </div>
           </div>
 

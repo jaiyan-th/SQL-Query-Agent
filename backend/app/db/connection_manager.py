@@ -26,15 +26,21 @@ def sanitize_db_url(url: str) -> str:
     """
     Safely parses a database URL and URL-encodes the username and password 
     if they contain special characters (like @, :, /, etc.) that are not already encoded.
+    Also strips unsupported query parameters like pgbouncer that cause psycopg2 errors.
     """
     url = url.strip()
     if not url:
         return url
         
+    # Strip pgbouncer query parameter which is unrecognized by psycopg2 / libpq
+    url = re.sub(r"[?&]pgbouncer=[^&]*", "", url)
+    url = url.rstrip("?&")
+
     # Match scheme://
     scheme_match = re.match(r"^(\w+(?:\+\w+)?)(://)", url)
     if not scheme_match:
         return url
+
         
     scheme = scheme_match.group(1)
     rest = url[len(scheme_match.group(0)):]

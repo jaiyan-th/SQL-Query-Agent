@@ -497,17 +497,16 @@ export const SetupPage: React.FC = () => {
         </div>
 
         {/* Continue Button */}
-        {activeConnection && schemaStatus?.indexed && (
-          <div className="flex justify-end mt-4">
-            <button
-              onClick={() => navigate('/dashboard/agent')}
-              className="px-6 py-3 bg-[#3ECF8E] hover:bg-[#3ECF8E]/90 text-[#0E1116] rounded font-sans-ui font-bold text-xs shadow-[0_0_15px_rgba(62,207,142,0.35)] transition-all flex items-center gap-2"
-            >
-              <span>Continue to SQL Agent</span>
-              <span>→</span>
-            </button>
-          </div>
-        )}
+        <div className="flex justify-end mt-4">
+          <button
+            onClick={() => navigate('/dashboard/agent')}
+            disabled={!activeConnection || !schemaStatus?.indexed}
+            className="px-6 py-3 bg-[#3ECF8E] hover:bg-[#3ECF8E]/90 text-[#0E1116] rounded font-sans-ui font-bold text-xs shadow-[0_0_15px_rgba(62,207,142,0.35)] transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+          >
+            <span>Continue to SQL Agent</span>
+            <span>→</span>
+          </button>
+        </div>
       </div>
     </DashboardLayout>
   );

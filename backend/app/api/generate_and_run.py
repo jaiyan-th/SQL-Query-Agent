@@ -49,8 +49,7 @@ async def generate_and_run_endpoint(
             connection_id=active_conn.id,
             database_type=active_conn.database_type,
             engine=engine,
-            question=request.question,
-            request_format=request.output_format
+            question=request.question
         )
         
         return response

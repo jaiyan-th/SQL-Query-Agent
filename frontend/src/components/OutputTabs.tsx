@@ -2,26 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { GenerateQueryResponse, GenerateAndRunResponse } from '../api/client';
 import { GuardrailsPanel } from './GuardrailsPanel';
 import { ResultTable } from './ResultTable';
-import { ChartRenderer } from './ChartRenderer';
-import { TextAnswer } from './TextAnswer';
-import { ReportView } from './ReportView';
-import { AnalysisView } from './AnalysisView';
 
 interface OutputTabsProps {
   response: GenerateQueryResponse | GenerateAndRunResponse | null;
   mode: 'generate' | 'execute';
 }
 
-type TabType =
-  | 'table'
-  | 'bar_chart'
-  | 'pie_chart'
-  | 'text'
-  | 'report'
-  | 'analysis'
-  | 'sql'
-  | 'rag'
-  | 'guardrails';
+type TabType = 'table' | 'sql' | 'rag' | 'guardrails';
 
 export const OutputTabs: React.FC<OutputTabsProps> = ({ response, mode }) => {
   const [activeTab, setActiveTab] = useState<TabType>('sql');
@@ -30,18 +17,12 @@ export const OutputTabs: React.FC<OutputTabsProps> = ({ response, mode }) => {
     return r && 'columns' in r && 'rows' in r;
   };
 
-  // Automatically switch tab when response changes based on the detected format or default
+  // Automatically switch tab when response changes based on the mode
   useEffect(() => {
     if (response) {
       if (mode === 'execute' && isExecuteResponse(response)) {
-        const fmt = response.output_format || 'table';
-        if (['table', 'bar_chart', 'pie_chart', 'text', 'report', 'analysis'].includes(fmt)) {
-          setActiveTab(fmt as TabType);
-        } else {
-          setActiveTab('table');
-        }
+        setActiveTab('table');
       } else {
-        // SQL only mode defaults to SQL tab
         setActiveTab('sql');
       }
     }
@@ -55,7 +36,8 @@ export const OutputTabs: React.FC<OutputTabsProps> = ({ response, mode }) => {
   const hasExecution = mode === 'execute' && executeResponse !== null;
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(response.sql);
+    const sqlText = response.generated_sql || response.sql;
+    navigator.clipboard.writeText(sqlText);
     alert('SQL copied to clipboard!');
   };
 
@@ -91,39 +73,28 @@ export const OutputTabs: React.FC<OutputTabsProps> = ({ response, mode }) => {
     });
   };
 
+  const sqlText = response.generated_sql || response.sql;
+
   return (
     <div className="bg-[#161A22] text-left">
       {/* Tab Headers */}
       <div className="border-b border-[#2A303C] px-4 bg-[#161A22] overflow-x-auto scrollbar-thin">
         <div className="flex gap-2 -mb-px py-2 whitespace-nowrap font-mono-code text-[11px]">
-          {/* Execution Tabs (Disabled if mode === 'generate') */}
-          {[
-            { id: 'table', label: 'Table' },
-            { id: 'bar_chart', label: 'Bar Chart' },
-            { id: 'pie_chart', label: 'Pie Chart' },
-            { id: 'text', label: 'Text' },
-            { id: 'report', label: 'Report' },
-            { id: 'analysis', label: 'Analysis' }
-          ].map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => { if (hasExecution) setActiveTab(tab.id as TabType); }}
-                disabled={!hasExecution}
-                title={!hasExecution ? 'Available in Generate & Execute mode' : undefined}
-                className={`px-3 py-1.5 font-bold rounded transition-all ${
-                  isActive
-                    ? 'bg-[#3ECF8E] text-[#0E1116]'
-                    : !hasExecution
-                    ? 'opacity-30 cursor-not-allowed text-slate-500'
-                    : 'text-slate-400 hover:bg-[#0E1116] hover:text-[#F3F1EA]'
-                }`}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
+          {/* Table Tab (Only enabled if mode === 'execute') */}
+          <button
+            onClick={() => { if (hasExecution) setActiveTab('table'); }}
+            disabled={!hasExecution}
+            title={!hasExecution ? 'Available in Generate & Execute mode' : undefined}
+            className={`px-3 py-1.5 font-bold rounded transition-all ${
+              activeTab === 'table'
+                ? 'bg-[#3ECF8E] text-[#0E1116]'
+                : !hasExecution
+                ? 'opacity-30 cursor-not-allowed text-slate-500'
+                : 'text-slate-400 hover:bg-[#0E1116] hover:text-[#F3F1EA]'
+            }`}
+          >
+            Table
+          </button>
 
           {/* Active Tabs in Both Modes */}
           <button
@@ -164,31 +135,6 @@ export const OutputTabs: React.FC<OutputTabsProps> = ({ response, mode }) => {
           />
         )}
 
-        {/* Bar Chart Tab */}
-        {activeTab === 'bar_chart' && executeResponse && (
-          <ChartRenderer config={executeResponse.chart_config} />
-        )}
-
-        {/* Pie Chart Tab */}
-        {activeTab === 'pie_chart' && executeResponse && (
-          <ChartRenderer config={executeResponse.chart_config} />
-        )}
-
-        {/* Text Tab */}
-        {activeTab === 'text' && executeResponse && (
-          <TextAnswer text={executeResponse.text_response || ''} />
-        )}
-
-        {/* Report Tab */}
-        {activeTab === 'report' && executeResponse && (
-          <ReportView report={executeResponse.report || ''} />
-        )}
-
-        {/* Analysis Tab */}
-        {activeTab === 'analysis' && executeResponse && (
-          <AnalysisView analysis={executeResponse.analysis || ''} />
-        )}
-
         {/* SQL Tab */}
         {activeTab === 'sql' && (
           <div className="font-mono-code text-xs">
@@ -202,7 +148,7 @@ export const OutputTabs: React.FC<OutputTabsProps> = ({ response, mode }) => {
               </button>
             </div>
             <pre className="bg-[#0E1116] p-4 rounded border border-[#2A303C] overflow-x-auto shadow-inner text-xs font-mono leading-relaxed">
-              <code>{renderHighlightedSQL(response.sql)}</code>
+              <code>{renderHighlightedSQL(sqlText)}</code>
             </pre>
             <div className="mt-4 bg-[#0E1116] border border-[#2A303C] p-4 rounded text-left">
               <h4 className="font-bold text-[#8B7CF6] mb-1.5">Explanation</h4>
@@ -215,14 +161,13 @@ export const OutputTabs: React.FC<OutputTabsProps> = ({ response, mode }) => {
         {activeTab === 'rag' && (
           <div className="font-mono-code text-xs">
             <h3 className="font-bold text-[#4FD1C5] mb-4">-- retrieved_schema_context</h3>
-            {response.schema_context.length === 0 ? (
+            {!response.schema_context || response.schema_context.length === 0 ? (
               <p className="text-slate-500 text-center py-4">No schema context retrieved</p>
             ) : (
               <div className="space-y-3 text-left">
                 {response.schema_context.map((ctx, idx) => (
                   <div key={idx} className="bg-[#0E1116] border border-[#2A303C] rounded p-4">
                     <div className="flex justify-between items-center mb-2">
-                      {/* RAG chips format exact match */}
                       <div className="flex flex-wrap gap-2 items-center">
                         <span className="px-2 py-0.5 bg-[#4FD1C5]/10 border border-[#4FD1C5]/30 text-[#4FD1C5] text-[10px] rounded">
                           [table] {ctx.table_name}

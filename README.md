@@ -26,10 +26,10 @@ Natural language
   → Function 1 (re-uses generation pipeline)
   → Guardrail validation (verifies SELECT-only execution boundaries)
   → Limit injection (limits records)
-  → Safe SELECT execution on connected PostgreSQL database
-  → Chatbot output formatting (table, bar chart, pie chart, text answer, report, analysis)
+  → Safe SELECT execution on connected database
+  → Return SQL and result table rows
 ```
-*Returns: SQL, results, table output, charts, text answer, report, analysis, RAG context, and guardrail status.*
+*Returns: SQL, explanation, columns, rows (as List[Dict]), row count, execution time, RAG context, and safety status.*
 
 ---
 

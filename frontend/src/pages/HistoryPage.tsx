@@ -205,10 +205,6 @@ export const HistoryPage: React.FC = () => {
                     </div>
                   )}
                   <div>
-                    <span className="font-sans-ui font-semibold text-[9px] uppercase tracking-wider text-slate-500 block mb-0.5">Output Format</span>
-                    <span className="text-slate-300 capitalize">{selectedItem.output_format}</span>
-                  </div>
-                  <div>
                     <span className="font-sans-ui font-semibold text-[9px] uppercase tracking-wider text-slate-500 block mb-0.5">Recorded At</span>
                     <span className="text-slate-300">{new Date(selectedItem.created_at).toLocaleString()}</span>
                   </div>

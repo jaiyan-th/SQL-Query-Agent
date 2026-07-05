@@ -13,7 +13,7 @@ from datetime import datetime
 class QueryRequest(BaseModel):
     """Request to generate or execute a SQL query."""
     question: str = Field(..., min_length=1, description="Natural language question")
-    output_format: Optional[str] = Field("auto", description="Desired output format (table, bar_chart, pie_chart, text, report, analysis, auto)")
+
 
 
 # ── Response Models ───────────────────────────────────────────
@@ -54,37 +54,34 @@ class SchemaContext(BaseModel):
 
 class GenerateQueryResponse(BaseModel):
     """Response for Function 1: Generate SQL Only (no execution)."""
-    status: str
-    sql: str
+    mode: str = "generate_only"
+    question: str
+    generated_sql: str
     explanation: str
     tables_used: List[str]
     confidence: float
+    rag_context_used: bool = True
+    guardrail_status: str
     safety_status: str
-    schema_context: List[SchemaContext]
-    needs_clarification: bool = False
-    clarification_question: Optional[str] = None
+    executed: bool = False
+    schema_context: List[SchemaContext] = []
 
 
 class GenerateAndRunResponse(BaseModel):
-    """Response for Function 2: Generate SQL and Execute on PostgreSQL with formatting."""
-    status: str
-    sql: str
+    """Response for Function 2: Generate SQL and Execute."""
+    mode: str = "generate_and_execute"
+    question: str
+    generated_sql: str
     explanation: str
     columns: List[str]
-    rows: List[List[Any]]
+    rows: List[Dict[str, Any]]
     row_count: int
-    execution_status: str
-    execution_time_ms: Optional[float] = None   # Query execution time in milliseconds
-    output_format: str = "table"
-    chart_config: Optional[Dict[str, Any]] = None
-    text_response: str = ""
-    report: str = ""
-    analysis: str = ""
-    guardrail_report: Dict[str, Any] = {}
-    schema_context: List[SchemaContext]
+    execution_time_ms: Optional[float] = None
+    rag_context_used: bool = True
+    guardrail_status: str
     safety_status: str
-    error_message: Optional[str] = None
-    query_id: Optional[int] = None
+    executed: bool = True
+    schema_context: List[SchemaContext] = []
 
 
 class QueryHistoryItem(BaseModel):
