@@ -1,0 +1,72 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+:root {
+  --bg-base: #0E1116;
+  --bg-sidebar: #0B0F15;
+  --bg-topbar: #0E1116;
+  --bg-card: #151922;
+  --bg-card-deep: #10141B;
+  --bg-terminal: #050505;
+
+  --border-subtle: #252B36;
+  --border-strong: #313846;
+
+  --text-primary: #E6E8EF;
+  --text-secondary: #B8C0CC;
+  --text-muted: #7E8A99;
+
+  --cyan: #53D6CC;
+  --cyan-bright: #6FFFE9;
+  --cyan-soft: rgba(83, 214, 204, 0.14);
+
+  --violet: #8B7CF6;
+  --violet-soft: rgba(139, 124, 246, 0.15);
+
+  --green: #3ECF8E;
+  --green-soft: rgba(62, 207, 142, 0.12);
+
+  --red: #EF5F5F;
+  --red-soft: rgba(239, 95, 95, 0.12);
+
+  --warning: #F5C26B;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: "Inter", sans-serif;
+}
+
+body {
+  margin: 0;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, .heading {
+  font-family: "Outfit", sans-serif;
+  letter-spacing: -0.04em;
+}
+
+body {
+  font-family: "Inter", sans-serif;
+}
+
+code,
+pre,
+.mono,
+.status-chip,
+.sql-block,
+.metadata-label,
+.font-mono-code {
+  font-family: "JetBrains Mono", monospace;
+}
+
+.gradient-text {
+  background: linear-gradient(90deg, #53D6CC, #8B7CF6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}

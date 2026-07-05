@@ -264,3 +264,51 @@ async def delete_active_sqlite_workspace(
         success=True,
         message="SQLite workspace removed successfully.",
     )
+
+
+@router.get("/sqlite/schema")
+async def get_sqlite_schema(
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
+    """
+    Introspect the active SQLite database workspace and return the structured schemas
+    along with row counts and column constraints.
+    """
+    workspace = db.query(SqliteWorkspace).filter(
+        SqliteWorkspace.user_id == current_user.id,
+        SqliteWorkspace.is_active == True,
+    ).first()
+
+    if not workspace:
+        return {"tables": []}
+
+    try:
+        from app.db.schema_introspect import SchemaIntrospector
+        from sqlalchemy import create_engine, text
+
+        engine = create_engine(f"sqlite:///{workspace.stored_file_path}")
+        introspector = SchemaIntrospector(engine)
+        schemas = introspector.get_all_schemas()
+
+        # Gather row counts for each table
+        with engine.connect() as conn:
+            for s in schemas:
+                table_name = s["table_name"]
+                try:
+                    # Enclose in double quotes to avoid syntax errors with special chars
+                    count_res = conn.execute(text(f'SELECT COUNT(*) FROM "{table_name}"'))
+                    s["row_count"] = count_res.scalar() or 0
+                except Exception as count_err:
+                    logger.warning(f"Failed to count rows for {table_name}: {count_err}")
+                    s["row_count"] = 0
+
+        return {"tables": schemas}
+
+    except Exception as e:
+        logger.error(f"Failed to fetch SQLite schema: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to introspect active database schema: {str(e)}"
+        )
+

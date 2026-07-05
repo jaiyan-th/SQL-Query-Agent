@@ -4,10 +4,10 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
-import { SetupPage } from './pages/SetupPage';
-import { AgentPage } from './pages/AgentPage';
-import { HistoryPage } from './pages/HistoryPage';
-import { QueryAgentPage } from './pages/QueryAgentPage';
+import { QueryAgentPage } from './pages/dashboard/QueryAgentPage';
+import { HistoryPage } from './pages/dashboard/HistoryPage';
+import { SchemaBrowserPage } from './pages/dashboard/SchemaBrowserPage';
+import { SettingsPage } from './pages/dashboard/SettingsPage';
 
 function App() {
   return (
@@ -31,18 +31,10 @@ function App() {
             }
           />
           <Route
-            path="/dashboard/setup"
+            path="/dashboard/query-agent"
             element={
               <ProtectedRoute>
-                <SetupPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/dashboard/agent"
-            element={
-              <ProtectedRoute>
-                <AgentPage />
+                <QueryAgentPage />
               </ProtectedRoute>
             }
           />
@@ -55,10 +47,18 @@ function App() {
             }
           />
           <Route
-            path="/dashboard/query-agent"
+            path="/dashboard/schema"
             element={
               <ProtectedRoute>
-                <QueryAgentPage />
+                <SchemaBrowserPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/settings"
+            element={
+              <ProtectedRoute>
+                <SettingsPage />
               </ProtectedRoute>
             }
           />

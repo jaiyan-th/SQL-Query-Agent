@@ -1,72 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
 
 export const LandingPage: React.FC = () => {
-  const [promptText, setPromptText] = useState('');
-  const [showRAGTags, setShowRAGTags] = useState(false);
-  const [showSQL, setShowSQL] = useState(false);
-  const [activeStep, setActiveStep] = useState(0);
-
-  const fullPrompt = "Show monthly revenue by category as bar chart";
-  const sqlLines = [
-    "SELECT category, SUM(revenue) AS total",
-    "FROM sales",
-    "GROUP BY category",
-    "ORDER BY total DESC",
-    "LIMIT 10;"
-  ];
-
-  // 1. Simulating the Hero Typing Sequence
-  useEffect(() => {
-    let index = 0;
-    const interval = setInterval(() => {
-      if (index < fullPrompt.length) {
-        setPromptText((prev) => prev + fullPrompt[index]);
-        index++;
-      } else {
-        clearInterval(interval);
-        // Step 2: Show RAG tags after typing prompt
-        setTimeout(() => {
-          setShowRAGTags(true);
-          // Step 3: Show SQL query line-by-line
-          setTimeout(() => {
-            setShowSQL(true);
-          }, 800);
-        }, 600);
-      }
-    }, 45);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // 2. Simulating the Pipeline status indicator cycling
-  useEffect(() => {
-    const cycle = setInterval(() => {
-      setActiveStep((prev) => (prev + 1) % 6);
-    }, 2000);
-    return () => clearInterval(cycle);
-  }, []);
-
   return (
-    <div className="min-h-screen bg-[#0E1116] text-[#F3F1EA] flex flex-col font-sans select-none selection:bg-[#4FD1C5]/20 selection:text-[#4FD1C5]">
+    <div className="min-h-screen bg-[#0E1116] text-[#E6E8EF] flex flex-col font-sans select-none selection:bg-[#53D6CC]/20 selection:text-[#53D6CC]">
       {/* 1. Header Navigation */}
-      <nav className="bg-[#0E1116]/80 backdrop-blur-md border-b border-[#2A303C] px-6 py-4 sticky top-0 z-50">
+      <nav className="bg-[#0E1116]/80 backdrop-blur-md border-b border-[#252B36] px-6 py-4 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
-            <h1 className="text-xl font-bold font-display text-[#F3F1EA] tracking-tight flex items-center gap-1">
-              <span className="text-[#4FD1C5] font-mono-code font-bold drop-shadow-[0_0_8px_rgba(79,209,197,0.6)]">&gt;_</span> QueryGen AI
+            <h1 className="text-xl font-bold font-display text-[#E6E8EF] tracking-tight flex items-center gap-1">
+              <span className="text-[#53D6CC] font-mono-code font-bold drop-shadow-[0_0_8px_rgba(83,214,204,0.6)]">&gt;_</span> QueryGen AI
             </h1>
           </Link>
-          <div className="flex items-center gap-6">
-            <Link 
-              to="/login" 
-              className="text-sm font-semibold text-[#F3F1EA]/70 hover:text-[#F3F1EA] transition-colors"
-            >
+          <div className="flex items-center gap-8 text-sm font-semibold">
+            <a href="#features" className="text-[#B8C0CC] hover:text-[#E6E8EF] transition-colors">Features</a>
+            <a href="#pipeline" className="text-[#B8C0CC] hover:text-[#E6E8EF] transition-colors">Pipeline</a>
+            <a href="#security" className="text-[#B8C0CC] hover:text-[#E6E8EF] transition-colors">Security</a>
+            <Link to="/login" className="text-[#B8C0CC] hover:text-[#E6E8EF] transition-colors">
               Sign In
             </Link>
             <Link 
               to="/signup" 
-              className="px-4 py-2 bg-[#8B7CF6] hover:bg-[#8B7CF6]/90 text-[#0E1116] font-mono-code text-xs font-bold rounded shadow-md transition-all"
+              className="px-4 py-2 bg-[#53D6CC] hover:bg-[#53D6CC]/90 text-[#062A28] font-bold rounded text-xs transition-all shadow-[0_0_15px_rgba(83,214,204,0.25)]"
             >
               Get Started
             </Link>
@@ -75,29 +31,30 @@ export const LandingPage: React.FC = () => {
       </nav>
 
       {/* 2. Hero Section */}
-      <section className="px-6 pt-16 pb-20 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+      <section className="px-6 pt-24 pb-20 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
         <div className="lg:col-span-6 flex flex-col items-start text-left">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded border border-[#2A303C] bg-[#161A22] text-[#4FD1C5] font-mono-code text-xs mb-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded border border-[#252B36] bg-[#151922] text-[#53D6CC] font-mono-code text-[11px] font-bold mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-[#3ECF8E] animate-ping" />
-            -- RAG-Powered Natural Language to SQL Query Agent
+            <span>RAG-POWERED INTELLIGENCE</span>
           </div>
-          <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight font-mono-code">
-            <span className="text-[#8B7CF6]">--</span> QueryGen AI <br/>
-            SQL Query Agent
+          <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight leading-tight mb-6">
+            Built for <br/>
+            <span className="gradient-text">Database Intelligence</span>
           </h1>
-          <p className="text-slate-400 mt-6 text-sm sm:text-base leading-relaxed max-w-xl">
-            QueryGen AI converts natural language questions into safe SQL queries using RAG, LLMs, Neon PostgreSQL schema grounding, Qdrant vector search, and backend SQL guardrails.
+          <p className="text-[#B8C0CC] text-sm sm:text-base leading-relaxed max-w-xl">
+            QueryGen AI helps users query uploaded SQLite databases without manually writing SQL. It understands database schemas through RAG, generates SQLite queries safely, and executes only SELECT queries.
           </p>
           <div className="mt-8 flex flex-wrap gap-4">
             <Link 
               to="/signup" 
-              className="px-6 py-3 bg-[#4FD1C5] hover:bg-[#4FD1C5]/90 text-[#0E1116] font-mono-code font-bold text-sm rounded shadow-lg transition-all"
+              className="px-6 py-3 bg-[#53D6CC] hover:bg-[#53D6CC]/90 text-[#062A28] font-bold text-sm rounded shadow-lg transition-all flex items-center gap-2"
             >
-              Get Started
+              <span>Get Started</span>
+              <ArrowRight size={16} />
             </Link>
             <Link 
               to="/login" 
-              className="px-6 py-3 bg-[#161A22] hover:bg-[#202733] text-[#F3F1EA] border border-[#2A303C] font-mono-code text-sm rounded transition-all"
+              className="px-6 py-3 bg-[#151922] hover:bg-[#202733] text-[#E6E8EF] border border-[#252B36] text-sm rounded transition-all"
             >
               Sign In
             </Link>
@@ -106,115 +63,86 @@ export const LandingPage: React.FC = () => {
 
         {/* Live Terminal Hero Mockup */}
         <div className="lg:col-span-6 w-full">
-          <div className="terminal-panel text-left w-full h-[320px] flex flex-col font-mono-code text-xs leading-normal">
-            <div className="terminal-header">
-              <span className="terminal-dot red" />
-              <span className="terminal-dot yellow" />
-              <span className="terminal-dot green" />
+          <div className="hero-terminal text-left w-full h-[320px] flex flex-col font-mono-code text-xs leading-normal">
+            <div className="terminal-window-header">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#EF5F5F]" />
+              <span className="w-2.5 h-2.5 rounded-full bg-[#F5C26B]" />
+              <span className="w-2.5 h-2.5 rounded-full bg-[#3ECF8E]" />
               <span className="text-slate-500 text-[10px] ml-2">querygen_agent_shell</span>
             </div>
-            <div className="p-4 flex-1 flex flex-col justify-between overflow-y-auto">
+            <div className="p-5 flex-1 flex flex-col justify-between overflow-y-auto bg-[#050505]">
               <div>
-                {/* Typed Question Prompt */}
                 <div className="flex items-start gap-2 mb-3">
-                  <span className="text-[#4FD1C5]">&gt;</span>
-                  <span className="cursor-blink font-semibold text-[#F3F1EA]">
-                    {promptText}
+                  <span className="text-[#53D6CC] font-bold">&gt;</span>
+                  <span className="text-[#E6E8EF]">Show top 5 companies by package as bar graph</span>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 mb-4 pl-5">
+                  <span className="text-slate-600 text-[10px] uppercase font-bold">RAG Retrieval:</span>
+                  <span className="px-2 py-0.5 bg-[#53D6CC]/10 border border-[#53D6CC]/30 text-[#53D6CC] text-[10px] rounded">
+                    [table] companies
+                  </span>
+                  <span className="px-2 py-0.5 bg-[#53D6CC]/10 border border-[#53D6CC]/30 text-[#53D6CC] text-[10px] rounded">
+                    [column] package_lpa
                   </span>
                 </div>
 
-                {/* Grounded RAG Schema Tags */}
-                {showRAGTags && (
-                  <div className="flex flex-wrap items-center gap-2 mb-4 animate-fade-in pl-5">
-                    <span className="text-[#4FD1C5]/50 text-[10px] uppercase font-bold">RAG Retrieval:</span>
-                    <span className="px-2 py-0.5 bg-[#4FD1C5]/10 border border-[#4FD1C5]/30 text-[#4FD1C5] text-[10px] rounded">
-                      [table] sales
-                    </span>
-                    <span className="px-2 py-0.5 bg-[#4FD1C5]/10 border border-[#4FD1C5]/30 text-[#4FD1C5] text-[10px] rounded">
-                      [column] revenue
-                    </span>
+                <div className="pl-5 border-l-2 border-[#8B7CF6]/20 py-1 space-y-1">
+                  <span className="text-slate-500 block mb-1">-- LLM generated query:</span>
+                  <div className="text-[#8B7CF6] font-bold">
+                    <span className="text-[#8B7CF6]">SELECT</span> name, package_lpa
                   </div>
-                )}
-
-                {/* Generated SQL output */}
-                {showSQL && (
-                  <div className="pl-5 border-l-2 border-[#8B7CF6]/20 py-1 space-y-1">
-                    <span className="text-slate-500 block mb-1">-- LLM generated query:</span>
-                    {sqlLines.map((line, idx) => (
-                      <div key={idx} className="text-[#8B7CF6] font-bold">
-                        {line.split(' ').map((word, wIdx) => {
-                          const isKeyword = ["SELECT", "FROM", "GROUP", "ORDER", "BY", "DESC", "LIMIT", "SUM", "AS"].includes(word.replace(';', '').replace(',', ''));
-                          const isTable = ["sales"].includes(word.replace(';', '').replace(',', ''));
-                          return (
-                            <span 
-                              key={wIdx} 
-                              className={isKeyword ? "text-[#8B7CF6]" : isTable ? "text-[#4FD1C5]" : "text-[#F3F1EA]"}
-                            >
-                              {word}{' '}
-                            </span>
-                          );
-                        })}
-                      </div>
-                    ))}
+                  <div className="text-[#8B7CF6] font-bold">
+                    <span className="text-[#8B7CF6]">FROM</span> companies
                   </div>
-                )}
+                  <div className="text-[#8B7CF6] font-bold">
+                    <span className="text-[#8B7CF6]">ORDER BY</span> package_lpa DESC
+                  </div>
+                  <div className="text-[#8B7CF6] font-bold">
+                    <span className="text-[#8B7CF6]">LIMIT</span> 5;
+                  </div>
+                </div>
               </div>
-              <div className="text-slate-500 text-[10px] border-t border-[#2A303C] pt-2 flex items-center justify-between">
+              <div className="text-slate-500 text-[10px] border-t border-[#252B36] pt-2.5 flex items-center justify-between font-mono">
                 <span>Safe SELECT mode enforced</span>
-                <span className="text-[#3ECF8E] font-bold">✓ Validated</span>
+                <span className="text-[#3ECF8E] font-bold">Validated 12ms</span>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 3. Tech Stack Strip */}
-      <section className="bg-[#161A22] border-y border-[#2A303C] py-6 text-center">
-        <div className="max-w-7xl mx-auto px-6">
-          <p className="text-[10px] font-mono-code uppercase tracking-wider text-slate-500 mb-3">-- core technologies</p>
-          <div className="flex flex-wrap items-center justify-center gap-8 md:gap-16 text-xs font-mono-code font-bold text-slate-400">
-            <span>FastAPI</span>
-            <span>Neon PostgreSQL</span>
-            <span>Qdrant Cloud</span>
-            <span>Groq / Gemini</span>
-            <span>React + TypeScript</span>
-            <span>Render</span>
-          </div>
-        </div>
-      </section>
-
-      {/* 4. Connected Pipeline Trace Section */}
-      <section className="px-6 py-24 bg-[#0E1116]">
+      {/* 3. Pipeline Trace Section */}
+      <section id="pipeline" className="px-6 py-24 border-t border-[#252B36] bg-[#0E1116]">
         <div className="max-w-7xl mx-auto text-center">
-          <h3 className="text-xl md:text-2xl font-bold font-mono-code mb-16">
-            <span className="text-[#8B7CF6]">&gt;</span> Pipeline Trace Execution
-          </h3>
+          <h2 className="text-2xl md:text-3xl font-extrabold mb-2">Pipeline Trace Execution</h2>
+          <p className="text-xs text-[#7E8A99] mb-16 font-semibold">
+            Real-time telemetry and validation at every step of the generation process.
+          </p>
 
           <div className="relative flex flex-col md:flex-row items-center justify-between gap-8 md:gap-4 max-w-5xl mx-auto">
             {/* Connected horizontal background line */}
-            <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-[#2A303C] -translate-y-1/2 hidden md:block z-0" />
+            <div className="absolute top-1/2 left-0 right-0 h-[1px] bg-[#252B36] -translate-y-1/2 hidden md:block z-0" />
             
             {[
-              { label: "Question", step: "Input", desc: "User asks in plain English" },
-              { label: "RAG Retrieval", step: "Schema context", desc: "Matches vector embeddings" },
-              { label: "LLM Gen", step: "Draft SQL", desc: "Compiles prompt templates" },
-              { label: "Guardrail", step: "Validation", desc: "Enforces SELECT rules" },
-              { label: "Execution", step: "Connection", desc: "Runs Neon PostgreSQL" },
-              { label: "Result", step: "Output", desc: "Renders table/charts" }
+              { label: "Question", step: "1", desc: "User asks in plain English", highlight: false },
+              { label: "RAG Retrieval", step: "2", desc: "Matches vector embeddings", highlight: false },
+              { label: "LLM Gen", step: "3", desc: "Complex prompt template", highlight: false },
+              { label: "Guardrail", step: "4", desc: "Enforces SELECT rules", highlight: true },
+              { label: "Execution", step: "5", desc: "Runs local SQLite DB", highlight: false },
+              { label: "Result", step: "6", desc: "Renders tables/charts", highlight: false }
             ].map((p, idx) => {
-              const isCurrent = idx === activeStep;
               return (
                 <div key={idx} className="relative z-10 flex flex-col items-center bg-[#0E1116] px-4 py-2">
-                  {/* Status dot */}
-                  <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center font-mono-code text-xs font-bold transition-all duration-300 ${
-                    isCurrent 
-                      ? 'border-[#4FD1C5] bg-[#4FD1C5] text-[#0E1116] scale-110 shadow-[0_0_15px_rgba(79,209,197,0.4)]'
-                      : 'border-[#2A303C] bg-[#161A22] text-slate-500'
+                  <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center font-mono-code text-xs font-bold transition-all duration-300 ${
+                    p.highlight 
+                      ? 'border-[#53D6CC] bg-[#53D6CC]/10 text-[#53D6CC] shadow-[0_0_15px_rgba(83,214,204,0.35)]'
+                      : 'border-[#252B36] bg-[#151922] text-[#7E8A99]'
                   }`}>
-                    {idx + 1}
+                    {p.step}
                   </div>
-                  <h4 className="font-mono-code text-xs font-bold text-[#F3F1EA] mt-4 mb-1">{p.label}</h4>
-                  <p className="text-[10px] text-slate-400 font-medium max-w-[120px] leading-tight">{p.desc}</p>
+                  <h4 className={`font-mono-code text-xs font-bold mt-4 mb-1 ${p.highlight ? 'text-[#53D6CC]' : 'text-[#E6E8EF]'}`}>{p.label}</h4>
+                  <p className="text-[10px] text-[#7E8A99] font-medium max-w-[120px] leading-tight mt-0.5">{p.desc}</p>
                 </div>
               );
             })}
@@ -222,157 +150,105 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* 5. Showcase Section */}
-      <section className="px-6 py-12 max-w-7xl mx-auto w-full">
-        <div className="terminal-panel p-8 md:p-12 text-left flex flex-col md:flex-row gap-8 items-center justify-between">
-          <div className="max-w-2xl">
-            <span className="text-[#8B7CF6] font-mono-code text-xs">-- overview</span>
-            <h2 className="text-2xl md:text-3xl font-extrabold mt-2 font-mono-code tracking-tight">Built for Database Intelligence</h2>
-            <p className="text-slate-400 mt-4 leading-relaxed text-sm">
-              QueryGen AI helps users query relational databases without manually writing SQL. It understands database schemas through RAG, generates SQL safely, executes only SELECT queries, and formats results into useful outputs.
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8 font-mono-code text-xs">
-              <div className="flex items-start gap-2">
-                <span className="text-[#3ECF8E]">✓</span>
-                <span className="text-slate-300">Converts natural language into SQL</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-[#3ECF8E]">✓</span>
-                <span className="text-slate-300">Uses Qdrant RAG to prevent table hallucinations</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-[#3ECF8E]">✓</span>
-                <span className="text-slate-300">Supports generate-only &amp; run configurations</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-[#3ECF8E]">✓</span>
-                <span className="text-slate-300">Displays charts, tables, and summaries</span>
-              </div>
+      {/* 4. Feature Showcase Grid */}
+      <section id="features" className="px-6 py-20 border-t border-[#252B36] bg-[#0E1116] max-w-7xl mx-auto w-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
+          {/* Card 1 */}
+          <div className="bg-[#151922] border border-[#252B36] rounded-[6px] p-8 flex flex-col justify-between">
+            <div>
+              <span className="text-[10px] text-[#8B7CF6] font-mono-code uppercase font-bold tracking-widest">CORE CAPABILITY</span>
+              <h3 className="text-xl font-bold text-[#E6E8EF] mt-3">Natural Language to SQL</h3>
+              <p className="text-[#B8C0CC] text-xs leading-relaxed mt-4">
+                Transform conversational queries into production-ready SQL scripts without revealing sensitive schema secrets or connection strings.
+              </p>
+            </div>
+            <div className="mt-8 bg-[#050505] p-3 rounded font-mono-code text-[11px] text-[#53D6CC]">
+              $ ask: "calculate churn rate for Q1 by region"
             </div>
           </div>
-          <div className="bg-[#1A1F29] border border-[#2A303C] p-6 rounded-xl flex flex-col justify-center text-center font-mono-code w-full md:w-auto">
-            <span className="text-[#3ECF8E] text-4xl mb-2">🛡️</span>
-            <span className="text-xl font-bold text-[#F3F1EA]">100% SELECT</span>
-            <span className="text-[10px] text-slate-500 uppercase tracking-widest mt-1">Read-Only Safe</span>
+
+          {/* Card 2 */}
+          <div className="bg-[#151922] border border-[#252B36] rounded-[6px] p-8 flex flex-col justify-between">
+            <div>
+              <span className="text-[10px] text-[#EF5F5F] font-mono-code uppercase font-bold tracking-widest">COMPLIANCE SECURITY</span>
+              <h3 className="text-xl font-bold text-[#E6E8EF] mt-3">SELECT-Only Guardrails</h3>
+              <p className="text-[#B8C0CC] text-xs leading-relaxed mt-4">
+                Automatically blocks UPDATE, DELETE, and DROP commands before they ever touch your database server. Rigorous multi-tier lexical analyzer.
+              </p>
+            </div>
+            <div className="mt-8 bg-[#050505] p-3 rounded font-mono-code text-[11px] text-[#EF5F5F] border border-[#EF5F5F]/20">
+              [BLOCKED] Rejected query contains restricted mutator DROP/DELETE.
+            </div>
           </div>
         </div>
       </section>
 
-      {/* 6. Capabilities as CLI Terminal Checklist */}
-      <section className="px-6 py-20 max-w-7xl mx-auto w-full">
-        <h3 className="text-xl md:text-2xl font-bold text-center font-mono-code mb-12">
-          <span className="text-[#8B7CF6]">&gt;</span> CLI capabilities_trace
-        </h3>
-        
-        <div className="terminal-panel max-w-3xl mx-auto font-mono-code text-xs p-6 space-y-4">
-          <div className="text-slate-500 mb-2">-- Fetching core agent specifications...</div>
-          
-          {[
-            {
-              title: "Natural Language to SQL",
-              desc: "Ask questions in plain English and generate accurate SQL using schema-aware RAG."
-            },
-            {
-              title: "Query Generation Mode",
-              desc: "Generate SQL without executing it. Review, copy, and validate the query safely."
-            },
-            {
-              title: "Generate and Execute Mode",
-              desc: "Generate SQL, validate it with guardrails, execute safe SELECT queries, and view results inside the app."
-            },
-            {
-              title: "Qdrant RAG Grounding",
-              desc: "Retrieve relevant table, column, and relationship context from Qdrant before SQL generation."
-            },
-            {
-              title: "Chatbot Output Formats",
-              desc: "Ask for output as table, bar chart, pie chart, text answer, report, or analysis."
-            },
-            {
-              title: "Production SQL Guardrails",
-              desc: "Block unsafe SQL commands, enforce read-only execution, inject limits, and prevent destructive queries."
-            }
-          ].map((feat, idx) => (
-            <div key={idx} className="flex items-start gap-3 pl-2 border-l border-[#2A303C] py-1">
-              <span className="text-[#3ECF8E] font-bold">[✓]</span>
-              <div>
-                <span className="font-bold text-[#F3F1EA]">{feat.title}</span>
-                <p className="text-[#F3F1EA]/65 mt-1 leading-normal">{feat.desc}</p>
+      {/* 5. Enterprise Security Panel */}
+      <section id="security" className="px-6 py-24 border-t border-[#252B36] bg-[#0E1116]">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-[#151922] border border-[#252B36] rounded-[6px] p-8 md:p-12 text-left flex flex-col lg:flex-row gap-12 items-center justify-between">
+            <div className="max-w-2xl">
+              <span className="text-[#8B7CF6] font-mono-code text-xs uppercase font-bold tracking-wider">Zero-Trust Architecture</span>
+              <h2 className="text-2xl md:text-3xl font-extrabold mt-3 tracking-tight">Enterprise-Grade Security</h2>
+              
+              <div className="flex flex-col gap-6 mt-8 font-sans-ui">
+                <div className="flex gap-4">
+                  <div className="w-5 h-5 rounded-full bg-[#3ECF8E]/10 flex items-center justify-center text-[#3ECF8E] shrink-0 mt-0.5">
+                    ✓
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-[#E6E8EF]">Read-Only SQL Execution</h4>
+                    <p className="text-[11px] text-[#7E8A99] mt-1 leading-normal font-semibold">
+                      Database roles are strictly restricted to SELECT privileges at the engine level. No write queries permitted.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <div className="w-5 h-5 rounded-full bg-[#3ECF8E]/10 flex items-center justify-center text-[#3ECF8E] shrink-0 mt-0.5">
+                    ✓
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-[#E6E8EF]">Audit Telemetry</h4>
+                    <p className="text-[11px] text-[#7E8A99] mt-1 leading-normal font-semibold">
+                      Every prompt, generated query, and validation status is logged for security audits and performance tuning.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <div className="w-5 h-5 rounded-full bg-[#3ECF8E]/10 flex items-center justify-center text-[#3ECF8E] shrink-0 mt-0.5">
+                    ✓
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-[#E6E8EF]">Encrypted Context Storage</h4>
+                    <p className="text-[11px] text-[#7E8A99] mt-1 leading-normal font-semibold">
+                      Schema definitions are matched semantically from vectors inside tenant-isolated Qdrant collections.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
-          ))}
+
+            <div className="bg-[#10141B] border border-[#252B36] p-8 rounded flex flex-col justify-center text-center font-mono-code w-full lg:w-72 shrink-0 shadow-lg">
+              <span className="text-[#3ECF8E] text-4xl mb-3">🛡️</span>
+              <span className="text-xl font-bold text-[#E6E8EF]">100% SELECT</span>
+              <span className="text-[10px] text-slate-500 uppercase tracking-widest mt-1.5 font-bold">Read-Only Safe</span>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* 7. Use Cases Section */}
-      <section className="px-6 py-12 max-w-7xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="terminal-panel p-6">
-          <h3 className="text-sm font-bold font-mono-code mb-6 flex items-center gap-1.5">
-            <span className="text-[#8B7CF6]">&gt;</span> SQL Query Agent Use Cases
-          </h3>
-          <ul className="space-y-4 font-mono-code text-xs text-slate-400">
-            <li className="flex items-start gap-2">
-              <span className="text-[#4FD1C5]">&gt;_</span>
-              <span><strong>Explore tables:</strong> "Show all customers from Chennai as table"</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-[#4FD1C5]">&gt;_</span>
-              <span><strong>Analyze records:</strong> "Show top 5 products by revenue as bar chart"</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-[#4FD1C5]">&gt;_</span>
-              <span><strong>Compare distributions:</strong> "Show employee count by department as pie chart"</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-[#4FD1C5]">&gt;_</span>
-              <span><strong>Generate reports:</strong> "Generate a report on monthly sales"</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-[#4FD1C5]">&gt;_</span>
-              <span><strong>Explain data:</strong> "Explain total revenue by category in text"</span>
-            </li>
-          </ul>
-        </div>
-
-        <div className="terminal-panel p-6">
-          <h3 className="text-sm font-bold font-mono-code mb-6 flex items-center gap-1.5">
-            <span className="text-[#8B7CF6]">&gt;</span> Security highlights
-          </h3>
-          <ul className="space-y-4 font-mono-code text-xs text-slate-400">
-            <li className="flex items-start gap-2">
-              <span className="text-[#3ECF8E]">[✓]</span>
-              <span><strong>Read-Only SQL Execution:</strong> Enforces SELECT query configurations on active PostgreSQL databases.</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-[#3ECF8E]">[✓]</span>
-              <span><strong>SELECT-Only Guardrails:</strong> Rejects structural updates, mutations, updates, or destructive queries.</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-[#3ECF8E]">[✓]</span>
-              <span><strong>Qdrant Grounding:</strong> No database secrets are exposed; schema context is matched using dynamic Qdrant vector documents.</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-[#3ECF8E]">[✓]</span>
-              <span><strong>JWT Protection:</strong> All API requests are protected via OAuth2 Bearer token validation layers.</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-[#3ECF8E]">[✓]</span>
-              <span><strong>Audit Telemetry:</strong> Log queries, performance speed, execution status, and security errors.</span>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      {/* 8. Call To Action Footer */}
-      <footer className="border-t border-[#2A303C] py-16 text-center mt-auto px-6 bg-[#161A22]/30">
+      {/* 6. Call To Action Footer */}
+      <footer className="border-t border-[#252B36] py-16 text-center mt-auto px-6 bg-[#0B0F15]">
         <div className="max-w-xl mx-auto flex flex-col items-center">
-          <h3 className="text-xl font-bold font-mono-code text-[#F3F1EA] tracking-tight">Ready to Query?</h3>
-          <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-            Gain immediate, RAG-grounded natural language query access to your PostgreSQL databases. 100% secure, SELECT-only.
+          <h3 className="text-xl font-bold text-[#E6E8EF] tracking-tight">Ready to Query?</h3>
+          <p className="text-xs text-[#7E8A99] mt-2.5 leading-relaxed font-semibold">
+            Gain immediate, RAG-grounded natural language query access to your SQLite databases. 100% secure, SELECT-only.
           </p>
           <Link 
             to="/signup" 
-            className="mt-6 px-6 py-3 bg-[#4FD1C5] hover:bg-[#4FD1C5]/90 text-[#0E1116] font-mono-code font-bold text-xs rounded shadow-md transition-all w-full sm:w-auto"
+            className="mt-6 px-6 py-3 bg-[#53D6CC] hover:bg-[#53D6CC]/90 text-[#062A28] font-bold text-xs rounded shadow-md transition-all w-full sm:w-auto"
           >
             Launch QueryGen Console
           </Link>
