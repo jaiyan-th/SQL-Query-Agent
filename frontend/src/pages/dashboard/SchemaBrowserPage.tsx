@@ -15,9 +15,19 @@ export const SchemaBrowserPage: React.FC = () => {
   const [selectedTable, setSelectedTable] = useState<TableSchema | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     loadSchema();
+  }, []);
+
+  useEffect(() => {
+    const handleSearch = (e: Event) => {
+      const query = (e as CustomEvent).detail.query;
+      setSearchQuery(query);
+    };
+    window.addEventListener('global-search', handleSearch);
+    return () => window.removeEventListener('global-search', handleSearch);
   }, []);
 
   const loadSchema = async () => {
@@ -39,6 +49,21 @@ export const SchemaBrowserPage: React.FC = () => {
       setLoading(false);
     }
   };
+
+  const filteredTables = tables.filter(t => 
+    t.table_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    t.columns.some(col => col.name.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  useEffect(() => {
+    if (filteredTables.length > 0) {
+      if (!selectedTable || !filteredTables.some(t => t.table_name === selectedTable.table_name)) {
+        setSelectedTable(filteredTables[0]);
+      }
+    } else {
+      setSelectedTable(null);
+    }
+  }, [searchQuery, tables]);
 
   return (
     <DashboardLayout>
@@ -79,6 +104,10 @@ export const SchemaBrowserPage: React.FC = () => {
           <div className="bg-[#151922] border border-[#252B36] rounded-[6px] p-16 text-center font-mono-code text-xs text-[#7E8A99] select-none">
             <span>-- NO DYNAMIC WORKSPACE TABLES INTROSPECTED --</span>
           </div>
+        ) : filteredTables.length === 0 && !loading ? (
+          <div className="bg-[#151922] border border-[#252B36] rounded-[6px] p-16 text-center font-mono-code text-xs text-[#7E8A99] select-none">
+            <span>-- NO TABLES MATCHING YOUR SEARCH FOUND --</span>
+          </div>
         ) : (
           <div className="flex flex-col gap-6">
             {/* 1. Dotted Relationship Visualizer Canvas */}
@@ -88,7 +117,7 @@ export const SchemaBrowserPage: React.FC = () => {
                 <span>Relationship Mapping Canvas</span>
               </h4>
               <div className="relationship-map flex flex-wrap gap-4 px-6 select-none relative font-mono-code text-[11px] font-bold">
-                {tables.map((t, idx) => (
+                {filteredTables.map((t, idx) => (
                   <div key={idx} className="flex items-center">
                     <div className={`px-4 py-2 border rounded bg-[#10141B] shadow-md transition-all ${
                       selectedTable?.table_name === t.table_name
@@ -97,7 +126,7 @@ export const SchemaBrowserPage: React.FC = () => {
                     }`}>
                       {t.table_name}
                     </div>
-                    {idx < tables.length - 1 && (
+                    {idx < filteredTables.length - 1 && (
                       <div className="flex items-center px-2">
                         <div className="w-8 h-[1px] bg-[#252B36]" />
                         <span className="text-[9px] text-[#8B7CF6] px-1 bg-[#10141B] border border-[#252B36] rounded">FK</span>
@@ -120,7 +149,7 @@ export const SchemaBrowserPage: React.FC = () => {
                 </h4>
 
                 <div className="flex flex-col gap-2 max-h-[480px] overflow-y-auto pr-1 scrollbar-thin">
-                  {tables.map((t) => {
+                  {filteredTables.map((t) => {
                     const isSelected = selectedTable?.table_name === t.table_name;
                     return (
                       <div

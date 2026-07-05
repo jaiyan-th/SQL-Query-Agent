@@ -18,6 +18,7 @@ export const HistoryPage: React.FC = () => {
   const [history, setHistory] = useState<QueryHistoryItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Stored copied status per ID
   const [copiedId, setCopiedId] = useState<number | null>(null);
@@ -25,6 +26,16 @@ export const HistoryPage: React.FC = () => {
   useEffect(() => {
     loadHistoryData();
   }, []);
+
+  useEffect(() => {
+    const handleSearch = (e: Event) => {
+      const query = (e as CustomEvent).detail.query;
+      setSearchQuery(query);
+    };
+    window.addEventListener('global-search', handleSearch);
+    return () => window.removeEventListener('global-search', handleSearch);
+  }, []);
+
 
   const loadHistoryData = async () => {
     try {
@@ -38,6 +49,13 @@ export const HistoryPage: React.FC = () => {
       setLoading(false);
     }
   };
+
+  const filteredHistory = history.filter(item => 
+    item.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.generated_sql.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (item.error_message && item.error_message.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
 
   const handleCopy = (sql: string, id: number) => {
     if (!sql) return;
@@ -128,8 +146,12 @@ export const HistoryPage: React.FC = () => {
             <div className="bg-[#151922] border border-[#252B36] rounded-[6px] p-16 text-center font-mono-code text-xs text-[#7E8A99] select-none">
               <span>-- NO QUERY TRACES RECORDED --</span>
             </div>
+          ) : filteredHistory.length === 0 ? (
+            <div className="bg-[#151922] border border-[#252B36] rounded-[6px] p-16 text-center font-mono-code text-xs text-[#7E8A99] select-none">
+              <span>-- NO HISTORY MATCHING YOUR SEARCH FOUND --</span>
+            </div>
           ) : (
-            history.map((item) => {
+            filteredHistory.map((item) => {
               const isBlocked = item.status === 'blocked' || item.status === 'failed' || item.status === 'error';
               return (
                 <div key={item.id} className="trace-card">

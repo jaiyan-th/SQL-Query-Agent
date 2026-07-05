@@ -36,14 +36,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ onUploadClick }) => {
       <div>
         {/* Top Logo Brand Area */}
         <div className="sidebar-brand">
-          <div className="brand-icon">
+          <div className="brand-icon text-[#53D6CC]">
             <TerminalSquare size={22} />
           </div>
           <div className="text-left">
-            <div className="brand-title">SQL_AGENT_v1</div>
+            <div className="brand-title">QueryGen AI</div>
             <div className="brand-subtitle">SQLite Workspace</div>
           </div>
         </div>
+
 
         {/* Primary Action Button */}
         <button className="sidebar-primary-button w-[212px]" onClick={handlePrimaryClick}>
