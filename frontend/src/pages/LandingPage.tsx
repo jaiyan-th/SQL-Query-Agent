@@ -33,7 +33,7 @@ export const LandingPage: React.FC = () => {
       {/* 2. Hero Section */}
       <section className="px-6 pt-24 pb-20 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
         <div className="lg:col-span-6 flex flex-col items-start text-left">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded border border-[#252B36] bg-[#151922] text-[#53D6CC] font-mono-code text-[11px] font-bold mb-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded border border-[#252B36] bg-[#151922] text-[#53D6CC] font-mono-code text-xs font-bold mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-[#3ECF8E] animate-ping" />
             <span>RAG-POWERED INTELLIGENCE</span>
           </div>
@@ -68,7 +68,7 @@ export const LandingPage: React.FC = () => {
               <span className="w-2.5 h-2.5 rounded-full bg-[#EF5F5F]" />
               <span className="w-2.5 h-2.5 rounded-full bg-[#F5C26B]" />
               <span className="w-2.5 h-2.5 rounded-full bg-[#3ECF8E]" />
-              <span className="text-slate-500 text-[10px] ml-2">querygen_agent_shell</span>
+              <span className="text-slate-500 text-xs ml-2">querygen_agent_shell</span>
             </div>
             <div className="p-5 flex-1 flex flex-col justify-between overflow-y-auto bg-[#050505]">
               <div>
@@ -78,11 +78,11 @@ export const LandingPage: React.FC = () => {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 mb-4 pl-5">
-                  <span className="text-slate-600 text-[10px] uppercase font-bold">RAG Retrieval:</span>
-                  <span className="px-2 py-0.5 bg-[#53D6CC]/10 border border-[#53D6CC]/30 text-[#53D6CC] text-[10px] rounded">
+                  <span className="text-slate-600 text-xs uppercase font-bold">RAG Retrieval:</span>
+                  <span className="px-2 py-0.5 bg-[#53D6CC]/10 border border-[#53D6CC]/30 text-[#53D6CC] text-xs rounded">
                     [table] companies
                   </span>
-                  <span className="px-2 py-0.5 bg-[#53D6CC]/10 border border-[#53D6CC]/30 text-[#53D6CC] text-[10px] rounded">
+                  <span className="px-2 py-0.5 bg-[#53D6CC]/10 border border-[#53D6CC]/30 text-[#53D6CC] text-xs rounded">
                     [column] package_lpa
                   </span>
                 </div>
@@ -103,7 +103,7 @@ export const LandingPage: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <div className="text-slate-500 text-[10px] border-t border-[#252B36] pt-2.5 flex items-center justify-between font-mono">
+              <div className="text-slate-500 text-xs border-t border-[#252B36] pt-2.5 flex items-center justify-between font-mono">
                 <span>Safe SELECT mode enforced</span>
                 <span className="text-[#3ECF8E] font-bold">Validated 12ms</span>
               </div>
@@ -142,7 +142,7 @@ export const LandingPage: React.FC = () => {
                     {p.step}
                   </div>
                   <h4 className={`font-mono-code text-xs font-bold mt-4 mb-1 ${p.highlight ? 'text-[#53D6CC]' : 'text-[#E6E8EF]'}`}>{p.label}</h4>
-                  <p className="text-[10px] text-[#7E8A99] font-medium max-w-[120px] leading-tight mt-0.5">{p.desc}</p>
+                  <p className="text-xs text-[#7E8A99] font-medium max-w-[120px] leading-tight mt-0.5">{p.desc}</p>
                 </div>
               );
             })}
@@ -156,7 +156,7 @@ export const LandingPage: React.FC = () => {
           {/* Card 1 */}
           <div className="bg-[#151922] border border-[#252B36] rounded-[6px] p-8 flex flex-col justify-between">
             <div>
-              <span className="text-[10px] text-[#8B7CF6] font-mono-code uppercase font-bold tracking-widest">CORE CAPABILITY</span>
+              <span className="text-xs text-[#8B7CF6] font-mono-code uppercase font-bold tracking-widest">CORE CAPABILITY</span>
               <h3 className="text-xl font-bold text-[#E6E8EF] mt-3">Natural Language to SQL</h3>
               <p className="text-[#B8C0CC] text-xs leading-relaxed mt-4">
                 Transform conversational queries into production-ready SQL scripts without revealing sensitive schema secrets or connection strings.
@@ -170,7 +170,7 @@ export const LandingPage: React.FC = () => {
           {/* Card 2 */}
           <div className="bg-[#151922] border border-[#252B36] rounded-[6px] p-8 flex flex-col justify-between">
             <div>
-              <span className="text-[10px] text-[#EF5F5F] font-mono-code uppercase font-bold tracking-widest">COMPLIANCE SECURITY</span>
+              <span className="text-xs text-[#EF5F5F] font-mono-code uppercase font-bold tracking-widest">COMPLIANCE SECURITY</span>
               <h3 className="text-xl font-bold text-[#E6E8EF] mt-3">SELECT-Only Guardrails</h3>
               <p className="text-[#B8C0CC] text-xs leading-relaxed mt-4">
                 Automatically blocks UPDATE, DELETE, and DROP commands before they ever touch your database server. Rigorous multi-tier lexical analyzer.
@@ -198,7 +198,7 @@ export const LandingPage: React.FC = () => {
                   </div>
                   <div>
                     <h4 className="text-xs font-bold text-[#E6E8EF]">Read-Only SQL Execution</h4>
-                    <p className="text-[11px] text-[#7E8A99] mt-1 leading-normal font-semibold">
+                    <p className="text-xs text-[#7E8A99] mt-1 leading-normal font-semibold">
                       Database roles are strictly restricted to SELECT privileges at the engine level. No write queries permitted.
                     </p>
                   </div>
@@ -210,7 +210,7 @@ export const LandingPage: React.FC = () => {
                   </div>
                   <div>
                     <h4 className="text-xs font-bold text-[#E6E8EF]">Audit Telemetry</h4>
-                    <p className="text-[11px] text-[#7E8A99] mt-1 leading-normal font-semibold">
+                    <p className="text-xs text-[#7E8A99] mt-1 leading-normal font-semibold">
                       Every prompt, generated query, and validation status is logged for security audits and performance tuning.
                     </p>
                   </div>
@@ -222,7 +222,7 @@ export const LandingPage: React.FC = () => {
                   </div>
                   <div>
                     <h4 className="text-xs font-bold text-[#E6E8EF]">Encrypted Context Storage</h4>
-                    <p className="text-[11px] text-[#7E8A99] mt-1 leading-normal font-semibold">
+                    <p className="text-xs text-[#7E8A99] mt-1 leading-normal font-semibold">
                       Schema definitions are matched semantically from vectors inside tenant-isolated Qdrant collections.
                     </p>
                   </div>
@@ -233,7 +233,7 @@ export const LandingPage: React.FC = () => {
             <div className="bg-[#10141B] border border-[#252B36] p-8 rounded flex flex-col justify-center text-center font-mono-code w-full lg:w-72 shrink-0 shadow-lg">
               <span className="text-[#3ECF8E] text-4xl mb-3">🛡️</span>
               <span className="text-xl font-bold text-[#E6E8EF]">100% SELECT</span>
-              <span className="text-[10px] text-slate-500 uppercase tracking-widest mt-1.5 font-bold">Read-Only Safe</span>
+              <span className="text-xs text-slate-500 uppercase tracking-widest mt-1.5 font-bold">Read-Only Safe</span>
             </div>
           </div>
         </div>
@@ -252,7 +252,7 @@ export const LandingPage: React.FC = () => {
           >
             Launch QueryGen Console
           </Link>
-          <div className="mt-8 text-[10px] text-slate-600 font-mono-code">
+          <div className="mt-8 text-xs text-slate-600 font-mono-code">
             © {new Date().getFullYear()} QueryGen AI. Built for Database Intelligence. All rights reserved.
           </div>
         </div>
