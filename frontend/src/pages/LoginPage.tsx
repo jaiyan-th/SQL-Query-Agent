@@ -36,68 +36,65 @@ export const LoginPage: React.FC = () => {
       subtitle="Verify credentials to allocate JWT token session"
       filename="auth_login.sh"
     >
-      <form onSubmit={handleSubmit} className="space-y-6 text-left font-mono-code text-[11px]">
+      <form onSubmit={handleSubmit} className="space-y-6 text-left font-mono-code text-xs">
         {error && (
-          <div className="bg-[#EC5F5B]/10 border border-[#EC5F5B]/30 text-[#EC5F5B] px-3 py-2.5 rounded font-bold">
+          <div className="bg-[var(--red)]/5 border border-[var(--red)]/35 text-[var(--red)] px-3 py-2.5 rounded font-bold">
             ⚠️ {error}
           </div>
         )}
         
-        <div>
-          <label htmlFor="email" className="block font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="email" className="block font-bold text-[var(--text-muted)] text-[10px] uppercase tracking-widest">
             &gt; EMAIL_ADDRESS
           </label>
-          <div className="mt-1">
-            <input
-              id="email"
-              name="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className="w-full px-3 py-2 bg-[#0E1116] border border-[#2A303C] rounded focus:outline-none focus:ring-1 focus:ring-[#4FD1C5] text-[11px] text-[#F3F1EA] shadow-inner"
-              disabled={loading}
-            />
-          </div>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+            className="w-full px-3 py-2 bg-[var(--bg-base)] border border-[var(--border-subtle)] focus:border-[var(--cyan)] rounded text-xs text-[var(--text-primary)] outline-none"
+            disabled={loading}
+          />
         </div>
 
-        <div>
-          <label htmlFor="password" className="block font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="password" className="block font-bold text-[var(--text-muted)] text-[10px] uppercase tracking-widest">
             &gt; PASSWORD
           </label>
-          <div className="mt-1">
-            <input
-              id="password"
-              name="password"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full px-3 py-2 bg-[#0E1116] border border-[#2A303C] rounded focus:outline-none focus:ring-1 focus:ring-[#4FD1C5] text-[11px] text-[#F3F1EA] shadow-inner"
-              disabled={loading}
-            />
-          </div>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+            className="w-full px-3 py-2 bg-[var(--bg-base)] border border-[var(--border-subtle)] focus:border-[var(--cyan)] rounded text-xs text-[var(--text-primary)] outline-none"
+            disabled={loading}
+          />
         </div>
 
-        <div>
+        <div className="pt-2">
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex justify-center py-2.5 px-4 bg-[#8B7CF6] hover:bg-[#8B7CF6]/90 text-[#0E1116] font-bold rounded shadow-[0_0_15px_rgba(139,124,246,0.35)] transition-colors disabled:bg-slate-700 disabled:text-slate-400 disabled:cursor-not-allowed"
+            className="w-full flex justify-center py-2.5 px-4 bg-[var(--violet)] hover:bg-[var(--violet)]/90 text-[#0E1116] font-bold rounded shadow-[0_0_15px_rgba(139,124,246,0.25)] border-none cursor-pointer transition-colors disabled:bg-slate-700 disabled:text-slate-400 disabled:cursor-not-allowed"
           >
             {loading ? 'Executing login_session...' : 'Execute Sign In'}
           </button>
         </div>
       </form>
 
-      <div className="mt-6 text-center text-[10px] border-t border-[#2A303C] pt-4 font-mono-code">
-        <span className="text-slate-500">New database analyst?</span>{' '}
-        <Link to="/signup" className="font-bold text-[#4FD1C5] hover:text-[#4FD1C5]/85 transition-colors">
+      <div className="mt-6 text-center text-[11px] border-t border-[var(--border-subtle)] pt-4 font-mono-code">
+        <span className="text-[var(--text-muted)]">New database analyst?</span>{' '}
+        <Link to="/signup" className="font-bold text-[var(--cyan)] hover:text-[var(--cyan-bright)] transition-colors">
           Create account
         </Link>
       </div>
     </AuthLayout>
   );
 };
+export default LoginPage;

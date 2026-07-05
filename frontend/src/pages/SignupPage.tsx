@@ -49,123 +49,114 @@ export const SignupPage: React.FC = () => {
       subtitle="Register schema privileges and token identifiers"
       filename="auth_signup.sh"
     >
-      <form onSubmit={handleSubmit} className="space-y-4 text-left font-mono-code text-[11px]">
+      <form onSubmit={handleSubmit} className="space-y-4 text-left font-mono-code text-xs">
         {error && (
-          <div className="bg-[#EC5F5B]/10 border border-[#EC5F5B]/30 text-[#EC5F5B] px-3 py-2.5 rounded font-bold">
+          <div className="bg-[var(--red)]/5 border border-[var(--red)]/35 text-[var(--red)] px-3 py-2.5 rounded font-bold">
             ⚠️ {error}
           </div>
         )}
         
-        <div>
-          <label htmlFor="fullName" className="block font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="fullName" className="block font-bold text-[var(--text-muted)] text-[10px] uppercase tracking-widest">
             &gt; FULL_NAME
           </label>
-          <div className="mt-1">
-            <input
-              id="fullName"
-              type="text"
-              required
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="Your Name"
-              className="w-full px-3 py-2 bg-[#0E1116] border border-[#2A303C] rounded focus:outline-none focus:ring-1 focus:ring-[#4FD1C5] text-[11px] text-[#F3F1EA] shadow-inner"
-              disabled={loading}
-            />
-          </div>
+          <input
+            id="fullName"
+            type="text"
+            required
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            placeholder="Your Name"
+            className="w-full px-3 py-2 bg-[var(--bg-base)] border border-[var(--border-subtle)] focus:border-[var(--cyan)] rounded text-xs text-[var(--text-primary)] outline-none"
+            disabled={loading}
+          />
         </div>
 
-        <div>
-          <label htmlFor="email" className="block font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="email" className="block font-bold text-[var(--text-muted)] text-[10px] uppercase tracking-widest">
             &gt; EMAIL_ADDRESS
           </label>
-          <div className="mt-1">
-            <input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className="w-full px-3 py-2 bg-[#0E1116] border border-[#2A303C] rounded focus:outline-none focus:ring-1 focus:ring-[#4FD1C5] text-[11px] text-[#F3F1EA] shadow-inner"
-              disabled={loading}
-            />
-          </div>
+          <input
+            id="email"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+            className="w-full px-3 py-2 bg-[var(--bg-base)] border border-[var(--border-subtle)] focus:border-[var(--cyan)] rounded text-xs text-[var(--text-primary)] outline-none"
+            disabled={loading}
+          />
         </div>
 
-        <div>
-          <label htmlFor="role" className="block font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="role" className="block font-bold text-[var(--text-muted)] text-[10px] uppercase tracking-widest">
             &gt; DATABASE_ROLE
           </label>
-          <div className="mt-1">
-            <select
-              id="role"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="w-full px-3 py-2 bg-[#0E1116] border border-[#2A303C] rounded focus:outline-none focus:ring-1 focus:ring-[#4FD1C5] text-[11px] text-[#F3F1EA] shadow-inner"
-              disabled={loading}
-            >
-              <option value="Student">Student</option>
-              <option value="Developer">Developer</option>
-              <option value="Data Analyst">Data Analyst</option>
-              <option value="Admin">Admin</option>
-              <option value="Business User">Business User</option>
-            </select>
-          </div>
+          <select
+            id="role"
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+            className="w-full px-3 py-2.5 bg-[var(--bg-base)] border border-[var(--border-subtle)] focus:border-[var(--cyan)] rounded text-xs text-[var(--text-primary)] outline-none cursor-pointer"
+            disabled={loading}
+          >
+            <option value="Student">Student</option>
+            <option value="Developer">Developer</option>
+            <option value="Data Analyst">Data Analyst</option>
+            <option value="Admin">Admin</option>
+            <option value="Business User">Business User</option>
+          </select>
         </div>
 
-        <div>
-          <label htmlFor="password" className="block font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="password" className="block font-bold text-[var(--text-muted)] text-[10px] uppercase tracking-widest">
             &gt; PASSWORD
           </label>
-          <div className="mt-1">
-            <input
-              id="password"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="•••••••• (min 6 characters)"
-              className="w-full px-3 py-2 bg-[#0E1116] border border-[#2A303C] rounded focus:outline-none focus:ring-1 focus:ring-[#4FD1C5] text-[11px] text-[#F3F1EA] shadow-inner"
-              disabled={loading}
-            />
-          </div>
+          <input
+            id="password"
+            type="password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="•••••••• (min 6 chars)"
+            className="w-full px-3 py-2 bg-[var(--bg-base)] border border-[var(--border-subtle)] focus:border-[var(--cyan)] rounded text-xs text-[var(--text-primary)] outline-none"
+            disabled={loading}
+          />
         </div>
 
-        <div>
-          <label htmlFor="confirmPassword" className="block font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="confirmPassword" className="block font-bold text-[var(--text-muted)] text-[10px] uppercase tracking-widest">
             &gt; CONFIRM_PASSWORD
           </label>
-          <div className="mt-1">
-            <input
-              id="confirmPassword"
-              type="password"
-              required
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full px-3 py-2 bg-[#0E1116] border border-[#2A303C] rounded focus:outline-none focus:ring-1 focus:ring-[#4FD1C5] text-[11px] text-[#F3F1EA] shadow-inner"
-              disabled={loading}
-            />
-          </div>
+          <input
+            id="confirmPassword"
+            type="password"
+            required
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="••••••••"
+            className="w-full px-3 py-2 bg-[var(--bg-base)] border border-[var(--border-subtle)] focus:border-[var(--cyan)] rounded text-xs text-[var(--text-primary)] outline-none"
+            disabled={loading}
+          />
         </div>
 
         <div className="pt-2">
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex justify-center py-2.5 px-4 bg-[#8B7CF6] hover:bg-[#8B7CF6]/90 text-[#0E1116] font-bold rounded shadow-[0_0_15px_rgba(139,124,246,0.35)] transition-colors disabled:bg-slate-700 disabled:text-slate-400 disabled:cursor-not-allowed"
+            className="w-full flex justify-center py-2.5 px-4 bg-[var(--violet)] hover:bg-[var(--violet)]/90 text-[#0E1116] font-bold rounded shadow-[0_0_15px_rgba(139,124,246,0.25)] border-none cursor-pointer transition-colors disabled:bg-slate-700 disabled:text-slate-400 disabled:cursor-not-allowed"
           >
             {loading ? 'Compiling credentials...' : 'Execute Sign Up'}
           </button>
         </div>
       </form>
 
-      <div className="mt-6 text-center text-[10px] border-t border-[#2A303C] pt-4 font-mono-code">
-        <span className="text-slate-500">Already registered?</span>{' '}
-        <Link to="/login" className="font-bold text-[#4FD1C5] hover:text-[#4FD1C5]/85 transition-colors">
+      <div className="mt-6 text-center text-[11px] border-t border-[var(--border-subtle)] pt-4 font-mono-code">
+        <span className="text-[var(--text-muted)]">Already registered?</span>{' '}
+        <Link to="/login" className="font-bold text-[var(--cyan)] hover:text-[var(--cyan-bright)] transition-colors">
           Sign in instead
         </Link>
       </div>
     </AuthLayout>
   );
 };
+export default SignupPage;
