@@ -143,7 +143,7 @@ export const SignupPage: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex justify-center py-2.5 px-4 bg-[var(--violet)] hover:bg-[var(--violet)]/90 text-[#0E1116] font-bold rounded shadow-[0_0_15px_rgba(139,124,246,0.25)] border-none cursor-pointer transition-colors disabled:bg-slate-700 disabled:text-slate-400 disabled:cursor-not-allowed"
+            className="w-full flex justify-center py-2.5 px-4 bg-[var(--cyan)] hover:bg-[var(--cyan-bright)] text-[#062A28] font-bold rounded shadow-[0_0_15px_rgba(83,214,204,0.25)] border-none cursor-pointer transition-colors disabled:bg-slate-700 disabled:text-slate-400 disabled:cursor-not-allowed"
           >
             {loading ? 'Compiling credentials...' : 'Execute Sign Up'}
           </button>
