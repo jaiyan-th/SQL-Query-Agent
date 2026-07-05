@@ -1,25 +1,21 @@
-import base64
 from cryptography.fernet import Fernet
 from app.config import settings
 import logging
 
 logger = logging.getLogger(__name__)
 
-# Ensure we have a valid Fernet key (32 URL-safe base64-encoded bytes)
-# If the provided key is not valid, we generate a fallback key or raise an error.
-_key = settings.CONNECTION_ENCRYPTION_KEY.encode()
+# Initialise Fernet at module import time.
+# The config validator already confirmed the key is a valid 32-byte base64 string,
+# so Fernet() should never fail here.  If it somehow does, we raise immediately
+# with the same actionable message — no silent fallbacks.
 try:
-    _fernet = Fernet(_key)
-except Exception as e:
-    logger.error(f"Invalid CONNECTION_ENCRYPTION_KEY format: {str(e)}. Attempting to generate a temporary key for safety.")
-    # Fallback key generated deterministically or safely for this runtime
-    # But in production, the user must supply a valid key.
-    try:
-        # Pad or generate base64 key
-        padded_key = base64.urlsafe_b64encode(_key.ljust(32)[:32])
-        _fernet = Fernet(padded_key)
-    except Exception:
-        raise ValueError("Invalid CONNECTION_ENCRYPTION_KEY environment variable. Must be 32 base64 bytes.")
+    _fernet = Fernet(settings.CONNECTION_ENCRYPTION_KEY.encode())
+except Exception:
+    raise RuntimeError(
+        "Invalid or missing CONNECTION_ENCRYPTION_KEY. "
+        "Generate one using: "
+        "python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\""
+    )
 
 def encrypt_text(value: str) -> str:
     """

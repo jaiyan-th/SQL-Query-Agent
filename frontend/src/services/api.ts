@@ -1,14 +1,10 @@
 /**
- * QueryGen AI — Typed API service layer
- * All backend calls go through this file with consistent auth headers and error handling.
- *
- * Usage:
- *   import { testConnection, saveConnection, ingestSchema, generateQuery, generateAndRun } from '../services/api';
+ * QueryGen AI — API service layer
+ * SQLite upload mode: users upload .db/.sqlite/.sqlite3 files.
  */
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
 
-/** Get authorization headers including Bearer token from localStorage */
 function getHeaders(): Record<string, string> {
   const token = localStorage.getItem('token');
   const base: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -16,75 +12,63 @@ function getHeaders(): Record<string, string> {
   return base;
 }
 
-/** Generic fetch wrapper with error extraction */
+function getAuthHeader(): Record<string, string> {
+  const token = localStorage.getItem('token');
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
+}
+
 async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
-  const res = await fetch(url, {
+  const res = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
-    headers: {
-      ...getHeaders(),
-      ...(options.headers as Record<string, string> || {}),
-    },
+    headers: { ...getHeaders(), ...(options.headers as Record<string, string> || {}) },
   });
-
   if (!res.ok) {
-    const errData = await res.json().catch(() => ({}));
-    throw new Error(errData.detail || `HTTP ${res.status}: ${res.statusText}`);
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `HTTP ${res.status}: ${res.statusText}`);
   }
-
   return res.json() as Promise<T>;
 }
 
 // ─── Response Types ────────────────────────────────────────────────────────
 
-export interface ConnectionTestResponse {
-  connected: boolean;
-  success?: boolean;
-  database_type?: string;
-  provider?: string;
-  masked_url?: string;
-  host?: string;
-  database_name?: string;
-  read_only_mode?: boolean;
-  message?: string;
+export interface UploadSqliteResponse {
+  success: boolean;
+  message: string;
+  workspace_id?: string;
+  database_type: string;
+  original_filename?: string;
+  table_count?: number;
 }
 
-export interface ConnectionSaveResponse {
-  saved: boolean;
-  success?: boolean;
-  connection_id: number;
+export interface ActiveSqliteWorkspaceResponse {
+  has_active_sqlite: boolean;
+  workspace_id?: string;
   database_type: string;
-  masked_url: string;
-  host: string;
-  database_name: string;
-  message?: string;
+  original_filename?: string;
+  table_count?: number;
+  uploaded_at?: string;
+  schema_indexed: boolean;
+  schema_indexed_at?: string;
 }
 
-export interface ActiveConnectionResponse {
-  connection_id: number;
-  connected: boolean;
-  database_type: string;
-  provider: string;
-  masked_url: string;
-  host: string;
-  database_name: string;
+export interface DeleteSqliteWorkspaceResponse {
+  success: boolean;
+  message: string;
 }
 
 export interface IngestSchemaResponse {
   success: boolean;
   indexed_tables: number;
   indexed_documents: number;
-  connection_id: number;
+  workspace_id: string;
   database_type: string;
-  message?: string;
-  tables_indexed?: number;   // alias
 }
 
 export interface RAGStatusResponse {
-  indexed: boolean;
-  connection_id: number;
-  indexed_tables: number;
-  indexed_documents: number;
+  schema_indexed: boolean;
+  workspace_id: string;
+  indexed_table_count: number;
+  indexed_at: string;
 }
 
 export interface SchemaContext {
@@ -97,7 +81,7 @@ export interface GenerateQueryResponse {
   mode: string;
   question: string;
   generated_sql: string;
-  sql?: string;              // alias populated from generated_sql
+  sql?: string;
   explanation: string;
   tables_used: string[];
   confidence: number;
@@ -112,7 +96,7 @@ export interface GenerateAndRunResponse {
   mode: string;
   question: string;
   generated_sql: string;
-  sql?: string;              // alias populated from generated_sql
+  sql?: string;
   explanation: string;
   columns: string[];
   rows: Record<string, unknown>[];
@@ -123,86 +107,66 @@ export interface GenerateAndRunResponse {
   safety_status: string;
   executed: boolean;
   schema_context: SchemaContext[];
-  message?: string;
 }
 
-// ─── Service Functions ─────────────────────────────────────────────────────
+// ─── SQLite Workspace ─────────────────────────────────────────────────────────
 
-/**
- * Step 1: Test a PostgreSQL connection URL.
- * Sends connection_url; backend auto-detects database type.
- */
-export async function testConnection(connectionUrl: string): Promise<ConnectionTestResponse> {
-  return apiFetch<ConnectionTestResponse>('/api/connections/test', {
+/** Upload a SQLite file. Uses multipart/form-data. */
+export async function uploadSqliteFile(file: File): Promise<UploadSqliteResponse> {
+  const form = new FormData();
+  form.append('file', file);
+  const res = await fetch(`${API_BASE_URL}/api/sqlite/upload`, {
     method: 'POST',
-    body: JSON.stringify({ connection_url: connectionUrl }),
+    headers: getAuthHeader(),
+    body: form,
   });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Upload failed: HTTP ${res.status}`);
+  }
+  return res.json();
 }
 
-/**
- * Step 2: Save the connection as active for this user.
- * Encrypts the URL server-side; never returns the raw URL.
- */
-export async function saveConnection(connectionUrl: string): Promise<ConnectionSaveResponse> {
-  return apiFetch<ConnectionSaveResponse>('/api/connections/save', {
-    method: 'POST',
-    body: JSON.stringify({
-      connection_url: connectionUrl,
-      connection_name: 'My Database',
-    }),
-  });
+/** Get active SQLite workspace metadata. */
+export async function getActiveSqliteWorkspace(): Promise<ActiveSqliteWorkspaceResponse> {
+  return apiFetch<ActiveSqliteWorkspaceResponse>('/api/sqlite/active');
 }
 
-/**
- * Fetch the currently active database connection metadata.
- * Returns masked URL only — never the raw credentials.
- */
-export async function getActiveConnection(): Promise<ActiveConnectionResponse> {
-  return apiFetch<ActiveConnectionResponse>('/api/connections/active');
+/** Delete (replace) the active SQLite workspace. */
+export async function deleteActiveSqliteWorkspace(): Promise<DeleteSqliteWorkspaceResponse> {
+  return apiFetch<DeleteSqliteWorkspaceResponse>('/api/sqlite/active', { method: 'DELETE' });
 }
 
-/**
- * Step 3: Extract schema from the active database and index into Qdrant.
- * Must have a saved active connection first.
- */
+// ─── RAG ──────────────────────────────────────────────────────────────────────
+
+/** Extract schema from active SQLite workspace and index into Qdrant. */
 export async function ingestSchema(): Promise<IngestSchemaResponse> {
-  return apiFetch<IngestSchemaResponse>('/api/rag/ingest-schema', {
-    method: 'POST',
-  });
+  return apiFetch<IngestSchemaResponse>('/api/rag/ingest-schema', { method: 'POST' });
 }
 
-/**
- * Get Qdrant schema index status for the active connection.
- */
-export async function getRAGStatus(): Promise<RAGStatusResponse> {
+/** Get RAG indexing status for the active workspace. */
+export async function getRagStatus(): Promise<RAGStatusResponse> {
   return apiFetch<RAGStatusResponse>('/api/rag/status');
 }
 
-/**
- * Step 4a: Generate SQL from a natural language question (no execution).
- * Uses RAG pipeline: Qdrant → LLM → guardrails → SQL.
- */
+// ─── Query ────────────────────────────────────────────────────────────────────
+
+/** Function 1: Generate SQL only, no execution. */
 export async function generateQuery(question: string): Promise<GenerateQueryResponse> {
   const data = await apiFetch<GenerateQueryResponse>('/api/generate-query', {
     method: 'POST',
     body: JSON.stringify({ question }),
   });
-  // Normalize: ensure 'sql' alias is always populated
   if (data.generated_sql && !data.sql) data.sql = data.generated_sql;
   return data;
 }
 
-/**
- * Step 4b: Generate SQL and execute it on the connected database.
- * Validates SQL with guardrails, executes safe SELECT only.
- * Returns columns, rows as list of dicts, row_count, and execution_time_ms.
- */
+/** Function 2: Generate SQL and execute on the uploaded SQLite file. */
 export async function generateAndRun(question: string): Promise<GenerateAndRunResponse> {
   const data = await apiFetch<GenerateAndRunResponse>('/api/generate-and-run', {
     method: 'POST',
     body: JSON.stringify({ question }),
   });
-  // Normalize: ensure 'sql' alias is always populated
   if (data.generated_sql && !data.sql) data.sql = data.generated_sql;
   return data;
 }

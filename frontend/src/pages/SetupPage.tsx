@@ -45,17 +45,27 @@ export const SetupPage: React.FC = () => {
         method: 'GET',
         headers: getAuthHeaders()
       });
-      
+
       if (connRes.ok) {
         const connData = await connRes.json();
-        setActiveConnection(connData);
-        setDbUrl(connData.masked_url);
-        setDatabaseType(connData.database_type);
-        setIsEditing(false);
-        setTestSuccess(true);
-        
-        // Fetch RAG sync status for this active connection
-        fetchRAGStatus();
+        if (connData.has_active_connection) {
+          setActiveConnection(connData);
+          // Show a masked placeholder in the URL field — never the real credentials
+          setDbUrl(`${connData.database_type}://****@${connData.host}/${connData.database_name}`);
+          setDatabaseType(connData.database_type);
+          setIsEditing(false);
+          setTestSuccess(true);
+
+          // Use schema_indexed from the connection metadata — avoids extra RAG round-trip
+          if (connData.schema_indexed) {
+            setSchemaStatus({ indexed: true, indexed_tables: 0, indexed_documents: 0 });
+          } else {
+            fetchRAGStatus();
+          }
+        } else {
+          setActiveConnection(null);
+          setIsEditing(true);
+        }
       } else {
         setActiveConnection(null);
         setIsEditing(true);
@@ -278,7 +288,7 @@ export const SetupPage: React.FC = () => {
                     </select>
                   ) : (
                     <div className="w-full px-3 py-2 bg-[#0E1116] border border-[#2A303C] rounded text-slate-300 font-sans-ui font-semibold">
-                      {activeConnection?.provider}
+                      {activeConnection?.database_type?.toUpperCase() ?? '—'}
                     </div>
                   )}
                 </div>
@@ -311,7 +321,9 @@ export const SetupPage: React.FC = () => {
                     />
                   ) : (
                     <div className="w-full px-3 py-2 bg-[#0E1116] border border-[#2A303C] rounded text-slate-400 select-all truncate font-mono">
-                      {activeConnection?.masked_url}
+                      {activeConnection
+                        ? `${activeConnection.database_type}://****@${activeConnection.host}/${activeConnection.database_name}`
+                        : '—'}
                     </div>
                   )}
                   <span className="text-[9px] text-slate-600 font-sans-ui mt-0.5 leading-normal">

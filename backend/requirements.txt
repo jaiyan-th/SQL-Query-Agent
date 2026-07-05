@@ -1,24 +1,23 @@
 # ============================================================
-# QueryGen AI — Production Requirements
-# Backend: Python 3.11+ | FastAPI | PostgreSQL | Qdrant | Groq
+# QueryGen AI — Backend Requirements
+# Python 3.11+ | FastAPI | Neon PostgreSQL | Qdrant | Groq
 # ============================================================
 
-# Core FastAPI dependencies
+# Core FastAPI
 fastapi>=0.109.0
 uvicorn[standard]>=0.27.0
 pydantic>=2.5.3
 pydantic-settings>=2.1.0
 python-multipart>=0.0.6
 
-# Database — PostgreSQL ONLY (no SQLite)
+# Platform DB — Neon PostgreSQL
 sqlalchemy>=2.0.25
 psycopg2-binary>=2.9.9
-alembic>=1.13.1
 
-# RAG and Vector Store — Qdrant Cloud persistent store
+# RAG — Qdrant Cloud + fastembed
 qdrant-client[fastembed]
 
-# LLM clients — Groq primary, Gemini fallback
+# LLM — Groq primary, Gemini fallback
 groq>=0.9.0
 google-generativeai>=0.5.4
 
@@ -26,13 +25,10 @@ google-generativeai>=0.5.4
 python-dotenv>=1.0.0
 tenacity>=8.2.3
 
-# Authentication & Security
+# Authentication
 passlib[bcrypt]>=1.7.4
 pyjwt>=2.8.0
 python-jose[cryptography]>=3.3.0
-cryptography>=42.0.0
-pymysql>=1.1.0
-
 
 # Testing
 pytest>=7.4.4

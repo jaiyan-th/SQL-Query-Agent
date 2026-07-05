@@ -1,6 +1,6 @@
 # API Endpoint Documentation
 
-All REST API endpoints are exposed on port `3000` of the server.
+All REST API endpoints are exposed on port `8000` of the server (default FastAPI port). JWT token authentication is required for all endpoints except health check, login, and signup. Send the JWT token in the `Authorization: Bearer <token>` header.
 
 ---
 
@@ -20,70 +20,178 @@ Returns general health and configuration state of the full-stack server.
 
 ---
 
-### 2. Test Connection
-Changes the active database connection string and triggers auto-introspection.
+### 2. User Authentication
 
+#### Signup / Register
 - **Method**: `POST`
-- **Path**: `/api/connection/test`
+- **Path**: `/api/auth/signup`
 - **Request Body**:
   ```json
   {
-    "database_url": "postgresql://readonly_user:password@localhost:5432/my_db"
+    "full_name": "John Doe",
+    "email": "john@example.com",
+    "password": "securepassword",
+    "role": "analyst"
   }
   ```
 - **Response**:
   ```json
   {
-    "connected": true,
-    "database_type": "postgresql",
-    "message": "Database connection successful"
+    "success": true,
+    "message": "User registered successfully."
+  }
+  ```
+
+#### Login
+- **Method**: `POST`
+- **Path**: `/api/auth/login`
+- **Request Body**:
+  ```json
+  {
+    "username": "john@example.com",
+    "password": "securepassword"
+  }
+  ```
+- **Response**:
+  ```json
+  {
+    "access_token": "eyJhbGciOi...",
+    "token_type": "bearer"
+  }
+  ```
+
+#### Current User Info
+- **Method**: `GET`
+- **Path**: `/api/auth/me`
+- **Headers**: `Authorization: Bearer <token>`
+- **Response**:
+  ```json
+  {
+    "id": 1,
+    "full_name": "John Doe",
+    "email": "john@example.com",
+    "role": "analyst"
   }
   ```
 
 ---
 
-### 3. Ingest Schema
-Introspects current schemas and indexes tables into the semantic vector store.
+### 3. SQLite Workspace Management
+
+#### Upload SQLite File
+- **Method**: `POST`
+- **Path**: `/api/sqlite/upload`
+- **Headers**: `Authorization: Bearer <token>`
+- **Request Body**: `file` (Multipart form file upload, extension must be `.db`, `.sqlite`, or `.sqlite3`)
+- **Response**:
+  ```json
+  {
+    "success": true,
+    "message": "SQLite database uploaded successfully.",
+    "workspace_id": "8fa538e1-d249-43c3-b43e-c6e8be139e80",
+    "database_type": "sqlite",
+    "original_filename": "placement_data.db",
+    "table_count": 6
+  }
+  ```
+
+#### Get Active Workspace Metadata
+- **Method**: `GET`
+- **Path**: `/api/sqlite/active`
+- **Headers**: `Authorization: Bearer <token>`
+- **Response**:
+  ```json
+  {
+    "has_active_sqlite": true,
+    "workspace_id": "8fa538e1-d249-43c3-b43e-c6e8be139e80",
+    "database_type": "sqlite",
+    "original_filename": "placement_data.db",
+    "table_count": 6,
+    "uploaded_at": "2026-07-06T01:10:00Z",
+    "schema_indexed": true,
+    "schema_indexed_at": "2026-07-06T01:12:00Z"
+  }
+  ```
+
+#### Delete Active Workspace
+- **Method**: `DELETE`
+- **Path**: `/api/sqlite/active`
+- **Headers**: `Authorization: Bearer <token>`
+- **Response**:
+  ```json
+  {
+    "success": true,
+    "message": "SQLite workspace removed successfully."
+  }
+  ```
+
+---
+
+### 4. RAG Ingestion & Status
+
+#### Ingest Schema
+Introspects tables in the uploaded SQLite file and indexes them into Qdrant Cloud.
 
 - **Method**: `POST`
-- **Path**: `/api/ingest-schema`
+- **Path**: `/api/rag/ingest-schema`
+- **Headers**: `Authorization: Bearer <token>`
 - **Response**:
   ```json
   {
-    "status": "success",
-    "tables_indexed": 4,
-    "documents_created": 4,
-    "collection": "schema_knowledge"
+    "success": true,
+    "indexed_tables": 6,
+    "indexed_documents": 6,
+    "workspace_id": "8fa538e1-d249-43c3-b43e-c6e8be139e80",
+    "database_type": "sqlite"
+  }
+  ```
+
+#### Get RAG Status
+- **Method**: `GET`
+- **Path**: `/api/rag/status`
+- **Headers**: `Authorization: Bearer <token>`
+- **Response**:
+  ```json
+  {
+    "schema_indexed": true,
+    "workspace_id": "8fa538e1-d249-43c3-b43e-c6e8be139e80",
+    "indexed_table_count": 6,
+    "indexed_at": "2026-07-06T01:12:00Z"
   }
   ```
 
 ---
 
-### 4. Function 1: Generate SQL Only
+### 5. Function 1: Generate SQL Only
 Generates grounded safe SQL for a natural language question. Does not execute the query.
 
 - **Method**: `POST`
 - **Path**: `/api/generate-query`
+- **Headers**: `Authorization: Bearer <token>`
 - **Request Body**:
   ```json
   {
-    "question": "Show top 5 companies by package"
+    "question": "Show all students from CSE department"
   }
   ```
 - **Response**:
   ```json
   {
-    "sql": "SELECT company_name, package_lpa FROM companies ORDER BY package_lpa DESC LIMIT 5;",
-    "explanation": "This query orders the companies table by package_lpa descending and returns the top 5.",
-    "tables_used": ["companies"],
+    "mode": "generate_query",
+    "question": "Show all students from CSE department",
+    "generated_sql": "SELECT * FROM students WHERE department = 'CSE' LIMIT 50;",
+    "explanation": "This query retrieves all columns from the students table filtered by the CSE department, limited to the top 50 records.",
+    "tables_used": ["students"],
     "confidence": 95,
-    "assumptions": [],
-    "is_safe": true,
-    "rag_context_used": [
+    "rag_context_used": true,
+    "guardrail_status": "passed",
+    "safety_status": "safe",
+    "executed": false,
+    "schema_context": [
       {
-        "title": "companies table",
-        "content": "TABLE: companies\nCOLUMNS:\n- company_id INTEGER\n- company_name TEXT\n- package_lpa REAL",
-        "score": 0.89
+        "table_name": "students",
+        "content": "Table: students\nColumns:\n  - id: INTEGER, not nullable (Primary Key)\n  - name: VARCHAR, not nullable\n  - department: VARCHAR, nullable\n  - gpa: FLOAT, nullable",
+        "relevance_score": 0.88
       }
     ]
   }
@@ -91,52 +199,88 @@ Generates grounded safe SQL for a natural language question. Does not execute th
 
 ---
 
-### 5. Function 2: Generate and Run
-Generates, validates, and runs safe SQL queries on the active database.
+### 6. Function 2: Generate and Run
+Generates, validates, and runs safe SQLite SELECT queries on the uploaded database workspace.
 
 - **Method**: `POST`
 - **Path**: `/api/generate-and-run`
+- **Headers**: `Authorization: Bearer <token>`
 - **Request Body**:
   ```json
   {
-    "question": "Show top 5 companies by package"
+    "question": "Show all students from CSE department"
   }
   ```
 - **Response**:
   ```json
   {
-    "question": "Show top 5 companies by package",
-    "sql": "SELECT company_name, package_lpa FROM companies ORDER BY package_lpa DESC LIMIT 5;",
-    "explanation": "This query orders the companies table by package_lpa descending and returns the top 5.",
-    "columns": ["company_name", "package_lpa"],
+    "mode": "generate_and_execute",
+    "question": "Show all students from CSE department",
+    "generated_sql": "SELECT * FROM students WHERE department = 'CSE' LIMIT 50;",
+    "explanation": "This query retrieves all columns from the students table filtered by the CSE department, limited to the top 50 records.",
+    "columns": ["id", "name", "department", "gpa"],
     "rows": [
-      { "company_name": "Google", "package_lpa": 32.5 },
-      { "company_name": "Amazon", "package_lpa": 28.0 }
+      { "id": 1, "name": "Alice Smith", "department": "CSE", "gpa": 3.9 },
+      { "id": 2, "name": "Bob Jones", "department": "CSE", "gpa": 3.7 }
     ],
     "row_count": 2,
-    "execution_time_ms": 14,
-    "status": "success"
+    "execution_time_ms": 12.5,
+    "rag_context_used": true,
+    "guardrail_status": "passed",
+    "safety_status": "safe",
+    "executed": true,
+    "schema_context": [
+      {
+        "table_name": "students",
+        "content": "Table: students\nColumns:\n  - id: INTEGER, not nullable (Primary Key)\n  - name: VARCHAR, not nullable\n  - department: VARCHAR, nullable\n  - gpa: FLOAT, nullable",
+        "relevance_score": 0.88
+      }
+    ]
   }
   ```
 
 ---
 
-### 6. Query Execution History
+### 7. Query Execution History
 Returns list of past query items and execution logs.
 
 - **Method**: `GET`
 - **Path**: `/api/history`
+- **Headers**: `Authorization: Bearer <token>`
 - **Response**:
   ```json
   [
     {
-      "id": 1,
-      "question": "Show top 5 companies by package",
-      "sqlQuery": "SELECT company_name, package_lpa FROM companies ORDER BY package_lpa DESC LIMIT 5;",
-      "mode": "generate_and_run",
+      "id": 15,
+      "user_id": 1,
+      "workspace_id": "8fa538e1-d249-43c3-b43e-c6e8be139e80",
+      "question": "Show all students from CSE department",
+      "generated_sql": "SELECT * FROM students WHERE department = 'CSE' LIMIT 50;",
+      "mode": "execute",
+      "output_format": "table",
       "status": "success",
-      "tablesUsed": "companies",
-      "confidence": 95
+      "row_count": 2,
+      "execution_time_ms": 12,
+      "error_message": null,
+      "created_at": "2026-07-06T01:13:00Z"
     }
   ]
+  ```
+
+---
+
+### 8. Suggestions
+Fetches suggestions based on the active SQLite schema.
+
+- **Method**: `GET`
+- **Path**: `/api/suggestions`
+- **Headers**: `Authorization: Bearer <token>`
+- **Response**:
+  ```json
+  {
+    "suggestions": [
+      { "question": "Show all columns from the students table." },
+      { "question": "Find the average gpa in students." }
+    ]
+  }
   ```

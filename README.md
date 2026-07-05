@@ -1,16 +1,15 @@
-# QueryGen AI — RAG-Powered Natural Language to SQL Query Agent 🚀
+# QueryGen AI — RAG-Powered Natural Language to SQLite Query Agent 🚀
 
-QueryGen AI is a production-ready SQL Query Agent that converts natural language questions into SQL queries using RAG, Qdrant, PostgreSQL schema grounding, and LLMs. It provides two core functions: SQL generation and safe SQL execution with chatbot-style result formats.
+QueryGen AI is a production-ready SQL Query Agent that converts natural language questions into SQLite queries using RAG, Qdrant Cloud, local SQLite database schemas, and LLMs. It provides two core functions: SQL generation and safe SQL execution with chatbot-style result formats.
 
 ---
 
 ## ⭐ Unified Single-Page Flow
 
 QueryGen AI includes a unified **Query Agent (Full Flow)** page (`/dashboard/query-agent`) that connects the complete user journey in a single interface:
-1. **Connect Database**: Paste a PostgreSQL connection URL (or use one-click demo presets). Credentials are tested live with `SELECT 1`.
-2. **Save Connection**: Once tested, the connection details are encrypted and set active.
-3. **Extract & Index Schema**: Introspects table structures, generates embeddings using `fastembed`, and uploads to Qdrant Cloud.
-4. **Ask & Execute**: Ask natural language questions, review the generated SQL, copy with one click, or inspect tabular query results and RAG context chunks.
+1. **Upload SQLite Database**: Drag and drop or browse a `.db`, `.sqlite`, or `.sqlite3` database file (up to 50 MB).
+2. **Extract & Index Schema**: Introspects table structures, generates embeddings using `fastembed` (`BAAI/bge-small-en-v1.5`), and uploads them to Qdrant Cloud under tenant-isolated IDs.
+3. **Ask & Execute**: Ask natural language questions, review the generated SQL, copy with one click, or inspect tabular query results and RAG context chunks.
 
 ---
 
@@ -20,7 +19,7 @@ QueryGen AI includes a unified **Query Agent (Full Flow)** page (`/dashboard/que
 **Endpoint**: `POST /api/generate-query`
 ```
 Natural language 
-  → RAG schema retrieval (retrieves database schema context from Qdrant)
+  → RAG schema retrieval (retrieves table structures matching semantic search from Qdrant)
   → LLM SQL generation (Groq primary, Gemini fallback)
   → Backend validation
   → SQL output only (no execution)
@@ -34,9 +33,9 @@ Natural language
 ```
 Natural language 
   → Function 1 (re-uses generation pipeline)
-  → Guardrail validation (verifies SELECT-only execution boundaries)
-  → Limit injection (limits records)
-  → Safe SELECT execution on connected database
+  → Guardrail validation (verifies SELECT-only execution boundaries and blocks SQLite-specific administrative commands)
+  → Limit injection (limits records dynamically)
+  → Safe SELECT execution on the uploaded SQLite database file
   → Return SQL and result table rows
 ```
 *Returns: SQL, explanation, columns, rows (as List[Dict]), row count, execution time, RAG context, and safety status.*
@@ -49,9 +48,10 @@ Natural language
 |-----------|-----------|
 | **Backend** | Python 3.11+, FastAPI |
 | **Validation** | Pydantic v2 |
-| **Database Access** | SQLAlchemy 2.0 |
-| **Production Database** | Neon PostgreSQL |
+| **Database Access** | SQLAlchemy 2.0 & sqlite3 (read-only mode) |
+| **Platform Database** | Neon PostgreSQL (Authentication & Workspace Metadata) |
 | **Vector Database** | Qdrant Cloud |
+| **Embedding Engine** | FastEmbed (`BAAI/bge-small-en-v1.5`) |
 | **LLM** | Groq (primary), Gemini (fallback) |
 | **Frontend** | React 18, TypeScript, Vite |
 | **Styling** | Vanilla CSS + Tailwind CSS |
@@ -65,13 +65,13 @@ Natural language
 ## 🏗️ System Architecture
 
 1. **Platform Database**:
-   Neon PostgreSQL stores authentication, encrypted user connection settings, and query history.
-2. **User Connected Database**:
-   Users can connect their own supported database using a single PostgreSQL connection URL. QueryGen AI reads schema metadata and executes safe SELECT-only queries directly on the connected database.
+   Neon PostgreSQL stores authentication, workspace metadata (file sizes, schema statuses), and query history.
+2. **User Workspace Database**:
+   Users upload their own SQLite database files. The backend stores them on disk (under isolated directories per user and workspace) and creates a read-only local database engine for safe schema introspection and query execution.
 3. **Vector Database**:
    Qdrant stores schema embeddings for RAG.
    > [!NOTE]
-   > Qdrant collections require payload indexes on `user_id` and `connection_id` to allow strict tenant-isolating query filtering. The system automatically creates these indexes using `ensure_collection()`.
+   > Qdrant collections require payload indexes on `user_id` and `workspace_id` to allow strict tenant-isolating query filtering. The system automatically creates these indexes using `ensure_collection()`.
 
 ---
 
@@ -135,8 +135,8 @@ npm run build
 
 ## 🧠 Relational Grounding with Qdrant Cloud
 
-1. Connect to Neon PostgreSQL using connection strings.
-2. Introspect database schemas via SQLAlchemy (tables, columns, keys, and foreign relationships), excluding internal tables (`querygen_users`, `querygen_history`).
+1. Upload SQLite database files through the UI.
+2. Introspect database schemas via SQLAlchemy (tables, columns, keys, and foreign relationships), excluding platform internal tables (`querygen_users`, `querygen_history`, `querygen_sqlite_workspaces`).
 3. Convert schema metadata into text documents and generate embeddings using `fastembed` (`BAAI/bge-small-en-v1.5`).
 4. Store embeddings and payloads in Qdrant Cloud.
 5. Query Qdrant vector search to fetch schema context for every user question, and inject into LLM prompts.
@@ -145,10 +145,11 @@ npm run build
 
 ## 🛡️ Security Wording & Guardrails
 
-* **Read-only SQL execution**: Enforces SELECT query configurations on active PostgreSQL database clients.
+* **Read-only SQL execution**: Enforces strict SELECT query boundaries on local SQLite files.
 * **SELECT-only guardrails**: Strips comments and blocks destructive SQL statements (DDL/DML mutations) at the code level.
 * **No destructive SQL**: Immediate execution rejections of statements containing `INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`, or semicolon injections.
-* **Internal Schema Restrictions**: Strictly blocks and rejects queries attempting to select or reference `querygen_users`, `querygen_history`, or `users`.
+* **SQLite Administrative Block**: Rejects queries attempting to run administrative commands like `PRAGMA`, `ATTACH`, `DETACH`, `VACUUM`, `BEGIN`, `COMMIT`, `REINDEX`, etc.
+* **Internal Schema Restrictions**: Strictly blocks and rejects queries attempting to select or reference platform tables (`querygen_users`, `querygen_history`, `querygen_sqlite_workspaces`, `users`).
 * **JWT protected workspace**: User routing and history logs are secured via standard JWT Bearer token authentication.
 
 ---
@@ -158,13 +159,13 @@ npm run build
 | Method | Endpoint | Request Body | Description |
 |--------|----------|--------------|-------------|
 | `GET` | `/api/health` | - | Backend health check |
-| `POST` | `/api/connections/test` | `{"connection_url": "..."}` | Test database credentials (SELECT 1) |
-| `POST` | `/api/connections/save` | `{"connection_url": "..."}` | Encrypt and save database credentials |
-| `GET` | `/api/connections/active` | - | Get current active database properties |
 | `POST` | `/api/auth/signup` | `{"email": "...", "password": "..."}` | Register a new user |
 | `POST` | `/api/auth/login` | `{"email": "...", "password": "..."}` | Log in and receive a JWT token |
 | `GET` | `/api/auth/me` | - | Retrieve profile of the logged-in user |
-| `POST` | `/api/rag/ingest-schema` | - | Introspect active database schema → store in Qdrant |
+| `POST` | `/api/sqlite/upload` | `file` (Multipart) | Upload a SQLite database file |
+| `GET` | `/api/sqlite/active` | - | Retrieve active SQLite workspace metadata |
+| `DELETE` | `/api/sqlite/active` | - | Remove active SQLite workspace from disk |
+| `POST` | `/api/rag/ingest-schema` | - | Introspect active SQLite database schema → store in Qdrant |
 | `GET` | `/api/rag/status` | - | Get RAG schema index status |
 | `POST` | `/api/generate-query` | `{"question": "..."}` | Function 1: Generate SQL Only |
 | `POST` | `/api/generate-and-run` | `{"question": "..."}` | Function 2: Generate + execute SQL |

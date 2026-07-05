@@ -1,54 +1,60 @@
+"""
+Function 1: Generate SQLite SQL from natural language (no execution).
+"""
+import logging
+
 from fastapi import APIRouter, HTTPException, Depends, status
 from sqlalchemy.orm import Session
+
 from app.schemas import QueryRequest, GenerateQueryResponse
 from app.services.query_generation_service import generate_query
 from app.api.auth import get_current_user
 from app.db.connection import get_db
-from app.db.models import Connection
-import logging
+from app.db.models import SqliteWorkspace
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
 
 @router.post("/generate-query", response_model=GenerateQueryResponse)
 async def generate_query_endpoint(
     request: QueryRequest,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user = Depends(get_current_user),
 ):
     """
-    Function 1: Generate SQL query from natural language without execution.
-    Grounds generation using the user's active connection schema context.
+    Function 1: Generate SQLite SQL from a natural language question.
+    Uses the active SQLite workspace for RAG-grounded generation.
+    Does not execute the query.
     """
-    # 1. Fetch user's active connection
-    active_conn = db.query(Connection).filter(
-        Connection.user_id == current_user.id,
-        Connection.is_active == True
+    workspace = db.query(SqliteWorkspace).filter(
+        SqliteWorkspace.user_id == current_user.id,
+        SqliteWorkspace.is_active == True,
     ).first()
-    
-    if not active_conn:
+
+    if not workspace:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="No active database connection configured. Please connect a database first."
+            detail="Please upload a SQLite database file before asking questions.",
         )
-        
+
+    if not workspace.schema_indexed:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Please extract and index your SQLite schema before asking questions.",
+        )
+
     try:
-        logger.info(f"Generate SQL query request from user {current_user.id} for connection {active_conn.id}")
-        
-        # 2. Invoke generation pipeline
-        response = generate_query(
+        logger.info(
+            f"Generate SQL: user={current_user.id}, workspace={workspace.id}"
+        )
+        return generate_query(
             db=db,
             user_id=current_user.id,
-            connection_id=active_conn.id,
-            database_type=active_conn.database_type,
-            question=request.question
+            workspace_id=workspace.id,
+            database_type="sqlite",
+            question=request.question,
         )
-        
-        return response
-        
     except Exception as e:
-        logger.error(f"Generate query endpoint failure: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Query generation failed: {str(e)}"
-        )
+        logger.error(f"Generate query failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Query generation failed: {str(e)}")

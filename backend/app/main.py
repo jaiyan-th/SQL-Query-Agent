@@ -1,129 +1,121 @@
 """
-QueryGen AI — FastAPI main application entry point.
+QueryGen AI — FastAPI application entry point.
 
-Production-ready: PostgreSQL + Qdrant Cloud + Groq/Gemini LLM.
+SQLite upload mode: users upload .db/.sqlite/.sqlite3 files.
+Platform database: Neon PostgreSQL (metadata only).
+Vector store: Qdrant Cloud (schema embeddings only).
+LLM: Groq primary / Gemini fallback.
 """
 import logging
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, RedirectResponse
+
 from app.config import settings
 
-# Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s"
+    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
 )
 logger = logging.getLogger(__name__)
 
-# ── Create FastAPI app ────────────────────────────────────────
+# ── App ───────────────────────────────────────────────────────────────────────
 app = FastAPI(
     title=settings.APP_NAME,
     description=(
-        "Schema-Aware RAG-Powered Natural Language to SQL Agent. "
-        "Two-function design: Function 1 generates SQL, Function 2 generates and executes. "
-        "PostgreSQL + Qdrant Cloud + Groq/Gemini."
+        "RAG-Powered Natural Language to SQLite SQL Agent. "
+        "Upload a SQLite file, index schema, ask questions, get SQL."
     ),
-    version="1.0.0",
+    version="2.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
 )
 
-# ── CORS middleware ───────────────────────────────────────────
-# Explicitly allow both localhost origins for dev frontend (port 5173)
-# and wildcard for direct API/docs access from any domain
+# ── CORS ──────────────────────────────────────────────────────────────────────
+_CORS_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "*"
-    ],
+    allow_origins=_CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept"],
 )
 
-# ── Register all API routers ──────────────────────────────────
-from app.api import health, connections, rag, generate, generate_and_run, history, auth, suggestions
+# ── Routers ───────────────────────────────────────────────────────────────────
+from app.api import health, auth, sqlite, rag, generate, generate_and_run, history, suggestions
 
 app.include_router(health.router,            prefix="/api", tags=["Health"])
-app.include_router(connections.router,       prefix="/api", tags=["Connections"])
 app.include_router(auth.router,              prefix="/api", tags=["Authentication"])
+app.include_router(sqlite.router,            prefix="/api", tags=["SQLite Workspace"])
 app.include_router(rag.router,               prefix="/api", tags=["RAG"])
 app.include_router(generate.router,          prefix="/api", tags=["Query Generation"])
 app.include_router(generate_and_run.router,  prefix="/api", tags=["Query Execution"])
 app.include_router(history.router,           prefix="/api", tags=["History"])
 app.include_router(suggestions.router,       prefix="/api", tags=["Suggestions"])
 
-import os
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, RedirectResponse
-
-# Define static folder path
+# ── Static files (production SPA) ─────────────────────────────────────────────
 static_dir = os.path.join(os.path.dirname(__file__), "static")
-
 if os.path.exists(static_dir):
-    logger.info(f"Serving frontend static files from: {static_dir}")
-    # Mount assets folder explicitly so CSS/JS are resolved fast
     assets_dir = os.path.join(static_dir, "assets")
     if os.path.exists(assets_dir):
         app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
 
-    # Catch-all route to serve index.html for React SPA routing
     @app.get("/{catchall:path}")
     async def serve_spa(catchall: str):
-        if catchall.startswith("api/") or catchall.startswith("docs") or catchall.startswith("redoc") or catchall.startswith("openapi.json"):
+        if any(catchall.startswith(p) for p in ("api/", "docs", "redoc", "openapi.json")):
             from fastapi import HTTPException
-            raise HTTPException(status_code=404, detail="API route not found")
-        
-        index_file = os.path.join(static_dir, "index.html")
-        if os.path.exists(index_file):
-            return FileResponse(index_file)
-        return RedirectResponse(url="/docs")
+            raise HTTPException(status_code=404, detail="Not found")
+        index = os.path.join(static_dir, "index.html")
+        return FileResponse(index) if os.path.exists(index) else RedirectResponse(url="/docs")
 else:
-    logger.info("Static files directory not found. Running in API-only fallback mode.")
     @app.get("/")
     async def root_redirect():
-        """Redirect root path to API interactive documentation (/docs)."""
         return RedirectResponse(url="/docs")
-# ── Lifecycle events ──────────────────────────────────────────
+
+
+# ── Startup ───────────────────────────────────────────────────────────────────
 @app.on_event("startup")
 async def startup_event():
-    """Log startup info and validate critical configuration."""
     logger.info("=" * 60)
-    logger.info(f"  {settings.APP_NAME} starting up")
+    logger.info(f"  {settings.APP_NAME} v2 starting up")
     logger.info(f"  Environment : {settings.APP_ENV}")
-    logger.info(f"  LLM Provider: {settings.LLM_PROVIDER}")
+    logger.info(f"  LLM         : {settings.LLM_PROVIDER}")
     logger.info(f"  Qdrant URL  : {settings.QDRANT_URL}")
-    logger.info(f"  Qdrant Coll : {settings.QDRANT_COLLECTION_NAME}")
-    logger.info(f"  DB Configured: {bool(settings.DATABASE_URL)}")
-    logger.info(f"  Allow Write : {settings.ALLOW_WRITE}")
+    logger.info(f"  Storage dir : {settings.SQLITE_STORAGE_DIR}")
+    logger.info(f"  Max upload  : {settings.MAX_SQLITE_UPLOAD_MB} MB")
     logger.info("=" * 60)
 
-    # Initialize tables in Neon database on startup
     from app.db.connection import Base, get_engine
-    from app.db.user import User  # import User so metadata is registered
+    from app.db.models import User, SqliteWorkspace, QueryHistory  # register all models
     try:
         Base.metadata.create_all(bind=get_engine())
-        logger.info("Successfully checked and initialized database tables (users)")
+        logger.info("Platform database tables checked/created.")
     except Exception as e:
-        logger.error(f"Failed to initialize database tables: {str(e)}")
+        logger.error(f"DB table init failed: {str(e)}")
+
+    # Ensure SQLite storage directory exists
+    import os as _os
+    _os.makedirs(settings.SQLITE_STORAGE_DIR, exist_ok=True)
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    """Cleanup on shutdown."""
     logger.info(f"Shutting down {settings.APP_NAME}")
 
 
-# ── Direct execution ──────────────────────────────────────────
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",
         port=8000,
-        reload=settings.APP_ENV == "development"
+        reload=settings.APP_ENV == "development",
     )

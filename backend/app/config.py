@@ -1,11 +1,11 @@
 """
 Configuration management for QueryGen AI.
-Loads and validates environment variables.
 
-Production-only stack:
-- PostgreSQL (DATABASE_URL must start with postgresql:// or postgres://)
-- Qdrant Cloud persistent store (QDRANT_URL, QDRANT_API_KEY)
-- Groq primary / Gemini fallback LLM
+Production stack:
+- Platform DB: Neon PostgreSQL (DATABASE_URL)
+- Vector DB: Qdrant Cloud
+- LLM: Groq primary / Gemini fallback
+- User data: Uploaded SQLite files stored on disk
 """
 from pydantic_settings import BaseSettings
 from pydantic import field_validator, model_validator
@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     GROQ_API_KEY: str = ""
     GEMINI_API_KEY: str = ""
 
-    # Database Configuration — PostgreSQL ONLY
+    # Platform Database — Neon PostgreSQL
     DATABASE_URL: str = ""
 
     # Qdrant Vector Database Configuration
@@ -42,19 +42,15 @@ class Settings(BaseSettings):
 
     # Security
     ALLOW_WRITE: bool = False
-    CONNECTION_ENCRYPTION_KEY: str = "0wbKLfHXFuKk0MgyCAlOvaiztfowtgrBKEAtoQE_B90="
 
+    # SQLite workspace storage
+    SQLITE_STORAGE_DIR: str = "storage/sqlite_workspaces"
+    MAX_SQLITE_UPLOAD_MB: int = 50
 
     @field_validator("DATABASE_URL")
     @classmethod
     def validate_postgres_url(cls, v: str) -> str:
-        """
-        Enforce PostgreSQL-only.
-        Accepts: postgresql://, postgres://, postgresql+psycopg2://
-        Rejects: mysql, sqlite, or other non-postgres URLs.
-        """
         if not v:
-            # Allow empty string at startup; will fail at connection time with clear error
             return v
         allowed_prefixes = (
             "postgresql://",
@@ -63,37 +59,31 @@ class Settings(BaseSettings):
         )
         if not any(v.startswith(p) for p in allowed_prefixes):
             raise ValueError(
-                "DATABASE_URL must be a PostgreSQL connection string. "
-                "Accepted formats:\n"
-                "  postgresql://username:password@host:5432/database_name\n"
-                "  postgresql+psycopg2://username:password@host:5432/database_name\n"
-                "Other databases are not supported. Only Neon PostgreSQL is supported."
+                "DATABASE_URL must be a PostgreSQL connection string "
+                "(postgresql://username:password@host:5432/database_name)."
             )
         return v
 
     @model_validator(mode="after")
     def validate_llm_keys(self) -> 'Settings':
-        """Ensure the appropriate API key is provided based on the LLM provider."""
-        if self.LLM_PROVIDER == "groq" and (not self.GROQ_API_KEY or self.GROQ_API_KEY.strip() == ""):
+        if self.LLM_PROVIDER == "groq" and not self.GROQ_API_KEY.strip():
             raise ValueError("GROQ_API_KEY is required when LLM_PROVIDER is 'groq'")
-        if self.LLM_PROVIDER == "gemini" and (not self.GEMINI_API_KEY or self.GEMINI_API_KEY.strip() == ""):
+        if self.LLM_PROVIDER == "gemini" and not self.GEMINI_API_KEY.strip():
             raise ValueError("GEMINI_API_KEY is required when LLM_PROVIDER is 'gemini'")
         return self
 
-    # Frontend URL (optional on backend, but can be loaded from .env)
+    # Frontend URL (optional)
     VITE_API_BASE_URL: str = ""
 
-    # JWT Authentication Configurations
+    # JWT Authentication
     JWT_SECRET_KEY: str = "replace-with-secure-random-secret"
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRY_MINUTES: int = 1440
 
     class Config:
-        # Load from .env in project root (one level up from backend/)
         env_file = "../.env"
         case_sensitive = True
         extra = "ignore"
 
 
-# Global settings instance
 settings = Settings()

@@ -6,12 +6,12 @@ interface QueryConsoleProps {
 }
 
 const SUGGESTIONS = [
-  'Show companies offering more than 8 LPA as table',
-  'Show top 5 companies by package as bar graph',
-  'Show placement count by department as pie chart',
-  'Explain companies offering more than 8 LPA in text',
-  'Generate a report on department-wise placements',
-  'Analyze offer status distribution'
+  'Show top 10 records from the first table',
+  'How many rows are in each table?',
+  'Show row count by category as bar chart',
+  'Summarize the data distribution in text',
+  'Generate a report on the most recent records',
+  'Analyze the overall data structure'
 ];
 
 export const QueryConsole: React.FC<QueryConsoleProps> = ({ onSubmit, isLoading }) => {

@@ -7,12 +7,13 @@ export const LandingPage: React.FC = () => {
   const [showSQL, setShowSQL] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
 
-  const fullPrompt = "Show top 5 companies by package as bar graph";
+  const fullPrompt = "Show monthly revenue by category as bar chart";
   const sqlLines = [
-    "SELECT name, package_lpa",
-    "FROM companies",
-    "ORDER BY package_lpa DESC",
-    "LIMIT 5;"
+    "SELECT category, SUM(revenue) AS total",
+    "FROM sales",
+    "GROUP BY category",
+    "ORDER BY total DESC",
+    "LIMIT 10;"
   ];
 
   // 1. Simulating the Hero Typing Sequence
@@ -127,10 +128,10 @@ export const LandingPage: React.FC = () => {
                   <div className="flex flex-wrap items-center gap-2 mb-4 animate-fade-in pl-5">
                     <span className="text-[#4FD1C5]/50 text-[10px] uppercase font-bold">RAG Retrieval:</span>
                     <span className="px-2 py-0.5 bg-[#4FD1C5]/10 border border-[#4FD1C5]/30 text-[#4FD1C5] text-[10px] rounded">
-                      [table] companies
+                      [table] sales
                     </span>
                     <span className="px-2 py-0.5 bg-[#4FD1C5]/10 border border-[#4FD1C5]/30 text-[#4FD1C5] text-[10px] rounded">
-                      [column] package_lpa
+                      [column] revenue
                     </span>
                   </div>
                 )}
@@ -142,8 +143,8 @@ export const LandingPage: React.FC = () => {
                     {sqlLines.map((line, idx) => (
                       <div key={idx} className="text-[#8B7CF6] font-bold">
                         {line.split(' ').map((word, wIdx) => {
-                          const isKeyword = ["SELECT", "FROM", "ORDER", "BY", "DESC", "LIMIT"].includes(word.replace(';', ''));
-                          const isTable = ["companies"].includes(word.replace(';', ''));
+                          const isKeyword = ["SELECT", "FROM", "GROUP", "ORDER", "BY", "DESC", "LIMIT", "SUM", "AS"].includes(word.replace(';', '').replace(',', ''));
+                          const isTable = ["sales"].includes(word.replace(';', '').replace(',', ''));
                           return (
                             <span 
                               key={wIdx} 

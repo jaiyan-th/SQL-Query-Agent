@@ -171,8 +171,9 @@ async def get_active_connection(
     current_user = Depends(get_current_user)
 ):
     """
-    Retrieve details of the logged-in user's active database connection.
-    Does NOT leak raw or encrypted credentials.
+    Retrieve safe metadata for the logged-in user's active database connection.
+    Never exposes raw credentials, encrypted URLs, masked URLs, or provider details.
+    Returns has_active_connection: false (not a 404) when no connection is set up.
     """
     active_conn = db.query(Connection).filter(
         Connection.user_id == current_user.id,
@@ -180,17 +181,16 @@ async def get_active_connection(
     ).first()
 
     if not active_conn:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No active database connection configured. Please set up a connection first."
-        )
+        return ActiveConnectionResponse(has_active_connection=False)
 
     return ActiveConnectionResponse(
+        has_active_connection=True,
         connection_id=active_conn.id,
-        connected=True,
         database_type=active_conn.database_type,
-        provider=active_conn.provider,
-        masked_url=active_conn.masked_database_url,
         host=active_conn.host,
-        database_name=active_conn.database_name
+        database_name=active_conn.database_name,
+        created_at=active_conn.created_at,
+        last_tested_at=active_conn.last_tested_at,
+        schema_indexed=bool(active_conn.schema_indexed),
+        schema_indexed_at=active_conn.schema_indexed_at,
     )

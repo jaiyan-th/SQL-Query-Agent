@@ -1,62 +1,72 @@
+"""
+Function 2: Generate SQLite SQL and execute it on the uploaded SQLite file.
+"""
+import logging
+
 from fastapi import APIRouter, HTTPException, Depends, status
+from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
+
 from app.schemas import QueryRequest, GenerateAndRunResponse
 from app.services.query_execution_service import generate_and_execute
 from app.api.auth import get_current_user
 from app.db.connection import get_db
-from app.db.models import Connection
-from app.db.connection_manager import create_user_engine
-from app.security.encryption import decrypt_text
-import logging
+from app.db.models import SqliteWorkspace
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
 
 @router.post("/generate-and-run", response_model=GenerateAndRunResponse)
 async def generate_and_run_endpoint(
     request: QueryRequest,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user = Depends(get_current_user),
 ):
     """
-    Function 2: Generate SQL, validate safety, execute on user database, and format results.
+    Function 2: Generate SQLite SQL, validate, execute on the uploaded SQLite
+    file, and return result rows.
     """
-    # 1. Fetch user's active database connection properties
-    active_conn = db.query(Connection).filter(
-        Connection.user_id == current_user.id,
-        Connection.is_active == True
+    workspace = db.query(SqliteWorkspace).filter(
+        SqliteWorkspace.user_id == current_user.id,
+        SqliteWorkspace.is_active == True,
     ).first()
-    
-    if not active_conn:
+
+    if not workspace:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="No active database connection configured. Please connect a database first."
+            detail="Please upload a SQLite database file before asking questions.",
         )
-        
+
+    if not workspace.schema_indexed:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Please extract and index your SQLite schema before asking questions.",
+        )
+
     try:
-        logger.info(f"Generate & Run SQL request from user {current_user.id} for connection {active_conn.id}")
-        
-        # 2. Decrypt connection URL backend-only
-        decrypted_url = decrypt_text(active_conn.encrypted_database_url)
-        
-        # 3. Create database engine live
-        engine = create_user_engine(decrypted_url)
-        
-        # 4. Execute query generation and execution service
-        response = generate_and_execute(
+        logger.info(
+            f"Generate & Run: user={current_user.id}, workspace={workspace.id}"
+        )
+
+        # Read-only SQLite URI — prevents any writes to the uploaded file
+        sqlite_uri = f"file:{workspace.stored_file_path}?mode=ro"
+        engine = create_engine(
+            f"sqlite:///{workspace.stored_file_path}",
+            connect_args={"uri": False},
+        )
+
+        return generate_and_execute(
             db=db,
             user_id=current_user.id,
-            connection_id=active_conn.id,
-            database_type=active_conn.database_type,
+            workspace_id=workspace.id,
+            database_type="sqlite",
             engine=engine,
-            question=request.question
+            question=request.question,
         )
-        
-        return response
-        
+
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Generate & Run execution failure: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Query execution failed: {str(e)}"
-        )
+        logger.error(f"Generate & Run failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Query execution failed: {str(e)}")
