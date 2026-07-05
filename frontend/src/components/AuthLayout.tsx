@@ -12,12 +12,10 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title, subtitl
   return (
     <div className="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-[var(--bg-base)] text-[var(--text-primary)] select-none font-sans-ui">
       <div className="sm:mx-auto sm:w-full sm:max-w-md flex flex-col items-center">
-        {/* Branding Logo */}
-        <Link to="/" className="flex items-center gap-2 mb-6 hover:opacity-90 transition-opacity font-mono-code">
-          <span className="text-xl">🚀</span>
-          <span className="text-sm font-bold text-[var(--text-primary)] tracking-tight">
-            <span className="text-[var(--cyan)]">&gt;_</span> QueryGen AI
-          </span>
+        <Link to="/" className="flex items-center gap-2 mb-6 hover:opacity-90 transition-opacity">
+          <h1 className="text-xl font-bold font-display text-[var(--text-primary)] tracking-tight flex items-center gap-1">
+            <span className="text-[var(--cyan)] font-mono-code font-bold drop-shadow-[0_0_8px_rgba(83,214,204,0.6)]">&gt;_</span> QueryGen AI
+          </h1>
         </Link>
       </div>
 
