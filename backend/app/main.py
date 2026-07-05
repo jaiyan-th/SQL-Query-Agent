@@ -57,12 +57,37 @@ app.include_router(generate_and_run.router,  prefix="/api", tags=["Query Executi
 app.include_router(history.router,           prefix="/api", tags=["History"])
 app.include_router(suggestions.router,       prefix="/api", tags=["Suggestions"])
 
-from fastapi.responses import RedirectResponse
+import os
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, RedirectResponse
 
-@app.get("/")
-async def root_redirect():
-    """Redirect root path to API interactive documentation (/docs)."""
-    return RedirectResponse(url="/docs")
+# Define static folder path
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+
+if os.path.exists(static_dir):
+    logger.info(f"Serving frontend static files from: {static_dir}")
+    # Mount assets folder explicitly so CSS/JS are resolved fast
+    assets_dir = os.path.join(static_dir, "assets")
+    if os.path.exists(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+    # Catch-all route to serve index.html for React SPA routing
+    @app.get("/{catchall:path}")
+    async def serve_spa(catchall: str):
+        if catchall.startswith("api/") or catchall.startswith("docs") or catchall.startswith("redoc") or catchall.startswith("openapi.json"):
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail="API route not found")
+        
+        index_file = os.path.join(static_dir, "index.html")
+        if os.path.exists(index_file):
+            return FileResponse(index_file)
+        return RedirectResponse(url="/docs")
+else:
+    logger.info("Static files directory not found. Running in API-only fallback mode.")
+    @app.get("/")
+    async def root_redirect():
+        """Redirect root path to API interactive documentation (/docs)."""
+        return RedirectResponse(url="/docs")
 # ── Lifecycle events ──────────────────────────────────────────
 @app.on_event("startup")
 async def startup_event():

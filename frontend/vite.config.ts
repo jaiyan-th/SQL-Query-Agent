@@ -7,7 +7,7 @@ export default defineConfig(({ mode }) => {
 
   // In development, proxy /api to local backend.
   // In production, VITE_API_BASE_URL is used directly in the app code.
-  const apiTarget = env.VITE_API_BASE_URL || 'http://localhost:8000'
+  const apiTarget = env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'
 
   return {
     plugins: [react()],
