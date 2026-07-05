@@ -1,0 +1,6 @@
+frontend/dist/** linguist-generated
+frontend/node_modules/** linguist-vendored
+node_modules/** linguist-vendored
+*.lock linguist-generated
+*.min.js linguist-generated
+*.map linguist-generated

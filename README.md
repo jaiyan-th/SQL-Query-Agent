@@ -47,6 +47,9 @@ Natural language
 | **Styling** | Vanilla CSS + Tailwind CSS |
 | **Deployment** | Render |
 
+> [!NOTE]
+> GitHub may show more TypeScript than Python in repository statistics because this is a full-stack project with a React TypeScript frontend and a Python FastAPI backend.
+
 ---
 
 ## ⚙️ Backend Setup & Configuration
