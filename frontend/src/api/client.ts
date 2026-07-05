@@ -16,8 +16,12 @@ export interface ConnectionTestRequest {
 
 export interface ConnectionTestResponse {
   connected: boolean;
+  success?: boolean;
   database_type?: string;
   message: string;
+  masked_url?: string;
+  host?: string;
+  database_name?: string;
 }
 
 export interface SchemaIngestResponse {

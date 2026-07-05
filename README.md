@@ -4,6 +4,16 @@ QueryGen AI is a production-ready SQL Query Agent that converts natural language
 
 ---
 
+## ⭐ Unified Single-Page Flow
+
+QueryGen AI includes a unified **Query Agent (Full Flow)** page (`/dashboard/query-agent`) that connects the complete user journey in a single interface:
+1. **Connect Database**: Paste a PostgreSQL connection URL (or use one-click demo presets). Credentials are tested live with `SELECT 1`.
+2. **Save Connection**: Once tested, the connection details are encrypted and set active.
+3. **Extract & Index Schema**: Introspects table structures, generates embeddings using `fastembed`, and uploads to Qdrant Cloud.
+4. **Ask & Execute**: Ask natural language questions, review the generated SQL, copy with one click, or inspect tabular query results and RAG context chunks.
+
+---
+
 ## ⭐ Two-Function Design
 
 ### Function 1 — Query Generation Mode  
@@ -45,7 +55,7 @@ Natural language
 | **LLM** | Groq (primary), Gemini (fallback) |
 | **Frontend** | React 18, TypeScript, Vite |
 | **Styling** | Vanilla CSS + Tailwind CSS |
-| **Deployment** | Render |
+| **API Client** | Typed service layer (`src/services/api.ts`) |
 
 > [!NOTE]
 > GitHub may show more TypeScript than Python in repository statistics because this is a full-stack project with a React TypeScript frontend and a Python FastAPI backend.
@@ -54,24 +64,21 @@ Natural language
 
 ## 🏗️ System Architecture
 
-QueryGen AI uses a three-layer architecture:
-
 1. **Platform Database**:
    Neon PostgreSQL stores authentication, encrypted user connection settings, and query history.
 2. **User Connected Database**:
-   Users can connect their own supported relational SQL databases such as PostgreSQL, MySQL, MariaDB, SQLite, or SQL Server. QueryGen AI reads schema metadata and executes safe SELECT-only queries directly on that connected database.
+   Users can connect their own supported database using a single PostgreSQL connection URL. QueryGen AI reads schema metadata and executes safe SELECT-only queries directly on the connected database.
 3. **Vector Database**:
-   Qdrant stores schema embeddings for RAG. It does not store database passwords or actual table data.
-
-> [!IMPORTANT]
-> User database records are not copied into the platform database. QueryGen AI connects live to the user's database only for schema sync and safe read-only query execution.
+   Qdrant stores schema embeddings for RAG.
+   > [!NOTE]
+   > Qdrant collections require payload indexes on `user_id` and `connection_id` to allow strict tenant-isolating query filtering. The system automatically creates these indexes using `ensure_collection()`.
 
 ---
 
 ## ⚙️ Backend Setup & Configuration
 
 ### 1. Environment Variables
-Create a `.env` file in the `backend/` directory:
+Create a `.env` file in the root directory:
 ```env
 APP_NAME="QueryGen AI"
 APP_ENV="development"
@@ -148,19 +155,18 @@ npm run build
 
 ## 📡 API Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/health` | Backend health check |
-| `POST` | `/api/connections/test` | Test database credentials (SELECT 1) |
-| `POST` | `/api/connections/save` | Encrypt and save database credentials |
-| `GET` | `/api/connections/active` | Get current active database properties |
-| `POST` | `/api/auth/signup` | Register a new user |
-| `POST` | `/api/auth/login` | Log in and receive a JWT token |
-| `GET` | `/api/auth/me` | Retrieve profile of the logged-in user |
-| `POST` | `/api/rag/ingest-schema` | Introspect active database schema → store in Qdrant |
-| `GET` | `/api/rag/status` | Get RAG schema index status |
-| `POST` | `/api/generate-query` | Function 1: Generate SQL Only |
-| `POST` | `/api/generate-and-run` | Function 2: Generate + execute SQL |
-| `GET` | `/api/history` | Get query history logs |
-| `GET` | `/api/suggestions` | Fetch database schema-grounded suggestions |
-
+| Method | Endpoint | Request Body | Description |
+|--------|----------|--------------|-------------|
+| `GET` | `/api/health` | - | Backend health check |
+| `POST` | `/api/connections/test` | `{"connection_url": "..."}` | Test database credentials (SELECT 1) |
+| `POST` | `/api/connections/save` | `{"connection_url": "..."}` | Encrypt and save database credentials |
+| `GET` | `/api/connections/active` | - | Get current active database properties |
+| `POST` | `/api/auth/signup` | `{"email": "...", "password": "..."}` | Register a new user |
+| `POST` | `/api/auth/login` | `{"email": "...", "password": "..."}` | Log in and receive a JWT token |
+| `GET` | `/api/auth/me` | - | Retrieve profile of the logged-in user |
+| `POST` | `/api/rag/ingest-schema` | - | Introspect active database schema → store in Qdrant |
+| `GET` | `/api/rag/status` | - | Get RAG schema index status |
+| `POST` | `/api/generate-query` | `{"question": "..."}` | Function 1: Generate SQL Only |
+| `POST` | `/api/generate-and-run` | `{"question": "..."}` | Function 2: Generate + execute SQL |
+| `GET` | `/api/history` | - | Get query history logs |
+| `GET` | `/api/suggestions` | - | Fetch database schema-grounded suggestions |

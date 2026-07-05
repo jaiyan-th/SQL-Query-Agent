@@ -81,6 +81,24 @@ def ensure_collection(collection_name: Optional[str] = None):
             )
         )
 
+    # Always ensure payload indexes exist for filter fields.
+    # create_payload_index is idempotent — safe to call even if the index already exists.
+    try:
+        client.create_payload_index(
+            collection_name=col_name,
+            field_name="user_id",
+            field_schema=models.PayloadSchemaType.INTEGER,
+        )
+        client.create_payload_index(
+            collection_name=col_name,
+            field_name="connection_id",
+            field_schema=models.PayloadSchemaType.INTEGER,
+        )
+        logger.info(f"Payload indexes ensured for 'user_id' and 'connection_id' in '{col_name}'")
+    except Exception as idx_err:
+        # Log but don't raise — indexes may already exist or have a different name
+        logger.warning(f"Could not create payload indexes (may already exist): {idx_err}")
+
 
 def recreate_collection(collection_name: Optional[str] = None):
     """

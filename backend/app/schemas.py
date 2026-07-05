@@ -101,37 +101,47 @@ class QueryHistoryItem(BaseModel):
 
 
 class ConnectionTestRequest(BaseModel):
-    """Payload to test connection configuration."""
+    """Payload to test connection configuration (full format with explicit type)."""
     database_type: str
     database_url: str
+
+
+class SimpleConnectionTestRequest(BaseModel):
+    """Simplified payload — accepts just connection_url and auto-detects database type."""
+    connection_url: str
 
 
 class ConnectionTestResponse(BaseModel):
     """Response returned for database connection tests."""
     connected: bool
-    database_type: str
-    provider: str
-    masked_url: str
-    host: str
-    database_name: str
+    database_type: Optional[str] = None
+    provider: Optional[str] = None
+    masked_url: Optional[str] = None
+    host: Optional[str] = None
+    database_name: Optional[str] = None
     read_only_mode: bool = True
+    message: Optional[str] = "Connection successful"
+    success: Optional[bool] = None  # alias for 'connected' for frontend compat
 
 
 class ConnectionSaveRequest(BaseModel):
     """Payload to save database connection credentials."""
-    connection_name: str
-    database_type: str
-    database_url: str
+    connection_name: Optional[str] = "My Database"
+    database_type: Optional[str] = None  # auto-detected from URL if omitted
+    database_url: Optional[str] = None   # used with explicit database_type
+    connection_url: Optional[str] = None  # simplified format — auto-detects type
 
 
 class ConnectionSaveResponse(BaseModel):
     """Response returned after connection properties are encrypted and saved."""
     saved: bool
+    success: Optional[bool] = None  # alias for 'saved' for frontend compat
     connection_id: int
     database_type: str
     masked_url: str
     host: str
     database_name: str
+    message: Optional[str] = "Connection saved successfully."
 
 
 class ActiveConnectionResponse(BaseModel):

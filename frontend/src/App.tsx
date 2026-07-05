@@ -7,6 +7,7 @@ import { SignupPage } from './pages/SignupPage';
 import { SetupPage } from './pages/SetupPage';
 import { AgentPage } from './pages/AgentPage';
 import { HistoryPage } from './pages/HistoryPage';
+import { QueryAgentPage } from './pages/QueryAgentPage';
 
 function App() {
   return (
@@ -25,7 +26,7 @@ function App() {
             path="/dashboard"
             element={
               <ProtectedRoute>
-                <Navigate to="/dashboard/setup" replace />
+                <Navigate to="/dashboard/query-agent" replace />
               </ProtectedRoute>
             }
           />
@@ -50,6 +51,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <HistoryPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/query-agent"
+            element={
+              <ProtectedRoute>
+                <QueryAgentPage />
               </ProtectedRoute>
             }
           />

@@ -43,6 +43,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
   };
 
   const menuItems = [
+    { name: 'Query Agent', path: '/dashboard/query-agent', icon: '⚡' },
     { name: 'Setup', path: '/dashboard/setup', icon: '🔌' },
     { name: 'SQL Agent', path: '/dashboard/agent', icon: '🤖' },
     { name: 'Query History', path: '/dashboard/history', icon: '📜' },
