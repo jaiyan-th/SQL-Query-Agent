@@ -94,10 +94,16 @@ def ensure_collection(collection_name: Optional[str] = None):
             field_name="connection_id",
             field_schema=models.PayloadSchemaType.INTEGER,
         )
-        logger.info(f"Payload indexes ensured for 'user_id' and 'connection_id' in '{col_name}'")
+        client.create_payload_index(
+            collection_name=col_name,
+            field_name="workspace_id",
+            field_schema=models.PayloadSchemaType.KEYWORD,
+        )
+        logger.info(f"Payload indexes ensured for 'user_id', 'connection_id', and 'workspace_id' in '{col_name}'")
     except Exception as idx_err:
         # Log but don't raise — indexes may already exist or have a different name
         logger.warning(f"Could not create payload indexes (may already exist): {idx_err}")
+
 
 
 def recreate_collection(collection_name: Optional[str] = None):
