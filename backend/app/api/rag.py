@@ -58,6 +58,15 @@ async def ingest_database_schema(
             detail="Please upload a SQLite database file before indexing schema.",
         )
 
+    import os
+    if not os.path.exists(workspace.stored_file_path):
+        workspace.is_active = False
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Active SQLite database file was not found on the server. Please re-upload your SQLite database file.",
+        )
+
     try:
         # Build a read-only SQLite engine from the stored file path
         engine = create_engine(f"sqlite:///{workspace.stored_file_path}")
@@ -104,6 +113,12 @@ async def get_rag_status(
     ).first()
 
     if not workspace:
+        return RAGStatusResponse(schema_indexed=False)
+
+    import os
+    if not os.path.exists(workspace.stored_file_path):
+        workspace.is_active = False
+        db.commit()
         return RAGStatusResponse(schema_indexed=False)
 
     try:

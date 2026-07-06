@@ -214,6 +214,15 @@ async def get_active_sqlite_workspace(
     if not workspace:
         return ActiveSqliteWorkspaceResponse(has_active_sqlite=False)
 
+    if not os.path.exists(workspace.stored_file_path):
+        logger.warning(
+            f"Active workspace file not found at '{workspace.stored_file_path}'. "
+            "Deactivating workspace automatically."
+        )
+        workspace.is_active = False
+        db.commit()
+        return ActiveSqliteWorkspaceResponse(has_active_sqlite=False)
+
     return ActiveSqliteWorkspaceResponse(
         has_active_sqlite=True,
         workspace_id=workspace.id,
@@ -281,6 +290,11 @@ async def get_sqlite_schema(
     ).first()
 
     if not workspace:
+        return {"tables": []}
+
+    if not os.path.exists(workspace.stored_file_path):
+        workspace.is_active = False
+        db.commit()
         return {"tables": []}
 
     try:

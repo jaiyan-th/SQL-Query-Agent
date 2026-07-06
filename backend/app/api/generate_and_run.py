@@ -38,6 +38,15 @@ async def generate_and_run_endpoint(
             detail="Please upload a SQLite database file before asking questions.",
         )
 
+    import os
+    if not os.path.exists(workspace.stored_file_path):
+        workspace.is_active = False
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Active SQLite database file was not found on the server. Please re-upload your SQLite database file.",
+        )
+
     if not workspace.schema_indexed:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
