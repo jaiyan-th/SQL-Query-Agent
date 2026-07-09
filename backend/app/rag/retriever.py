@@ -3,7 +3,7 @@ Qdrant RAG retrieval — filters strictly by user_id + workspace_id.
 """
 from typing import List, Dict, Any
 
-from app.rag.qdrant_client import get_qdrant_client
+from app.rag.qdrant_client import get_qdrant_client, ensure_collection
 from app.schemas import SchemaContext
 from app.config import settings
 from qdrant_client.http import models
@@ -38,6 +38,9 @@ def retrieve_schema_context(
     try:
         client = get_qdrant_client()
         col_name = settings.QDRANT_COLLECTION_NAME
+        
+        # Ensure collection and keyword payload indexes are set up
+        ensure_collection(col_name)
 
         logger.info(
             f"RAG lookup: user_id={user_id}, workspace_id={workspace_id}, database_type={database_type}"
@@ -49,9 +52,9 @@ def retrieve_schema_context(
 
         query_filter = models.Filter(
             must=[
-                models.FieldCondition(key="user_id", match=models.MatchValue(value=user_id)),
-                models.FieldCondition(key="workspace_id", match=models.MatchValue(value=workspace_id)),
-                models.FieldCondition(key="database_type", match=models.MatchValue(value=database_type)),
+                models.FieldCondition(key="user_id", match=models.MatchValue(value=str(user_id))),
+                models.FieldCondition(key="workspace_id", match=models.MatchValue(value=str(workspace_id))),
+                models.FieldCondition(key="database_type", match=models.MatchValue(value=str(database_type))),
             ]
         )
 

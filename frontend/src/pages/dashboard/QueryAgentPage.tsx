@@ -133,6 +133,8 @@ export const QueryAgentPage: React.FC = () => {
       const errMsg = err.message || '';
       if (errMsg.includes('unable to open database file') || errMsg.includes('sqlite3.OperationalError') || errMsg.includes('database.sqlite')) {
         setError("Schema indexing failed because the uploaded SQLite workspace file could not be opened. Please reset the workspace and upload the database again.");
+      } else if (errMsg.includes('Vector database index setup failed') || errMsg.includes('payload index') || errMsg.includes('Qdrant')) {
+        setError("Schema indexing failed because the vector database payload index is not configured. Please retry after backend index repair.");
       } else {
         setError(errMsg || 'Schema indexing failed.');
       }

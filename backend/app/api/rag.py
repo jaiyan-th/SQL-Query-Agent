@@ -119,6 +119,12 @@ async def ingest_database_schema(
 
     except Exception as e:
         logger.error(f"RAG schema ingestion failed: {str(e)}")
+        err_msg = str(e).lower()
+        if "qdrant" in err_msg or "index" in err_msg or "bad request" in err_msg or "filter" in err_msg:
+            return SchemaIngestAPIResponse(
+                success=False,
+                message="Vector database index setup failed. Please retry schema indexing."
+            )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Schema ingestion failed: {str(e)}",
@@ -155,8 +161,8 @@ async def get_rag_status(
             collection_name=col_name,
             count_filter=models.Filter(
                 must=[
-                    models.FieldCondition(key="user_id", match=models.MatchValue(value=current_user.id)),
-                    models.FieldCondition(key="workspace_id", match=models.MatchValue(value=workspace.id)),
+                    models.FieldCondition(key="user_id", match=models.MatchValue(value=str(current_user.id))),
+                    models.FieldCondition(key="workspace_id", match=models.MatchValue(value=str(workspace.id))),
                 ]
             ),
         )
@@ -175,3 +181,48 @@ async def get_rag_status(
             schema_indexed=False,
             workspace_id=workspace.id,
         )
+
+
+@router.get("/rag/vector-status")
+async def get_vector_status():
+    """
+    Get Qdrant collection status and payload index configuration status.
+    """
+    try:
+        client = get_qdrant_client()
+        col_name = settings.QDRANT_COLLECTION_NAME
+        try:
+            collections_response = client.get_collections()
+            exists = any(c.name == col_name for c in collections_response.collections)
+        except Exception:
+            exists = False
+
+        required_indexes = {
+            "user_id": False,
+            "workspace_id": False,
+            "database_type": False,
+            "table_name": False,
+            "chunk_type": False
+        }
+
+        if exists:
+            try:
+                collection_info = client.get_collection(collection_name=col_name)
+                existing_indexes = collection_info.payload_schema or {}
+                for field in required_indexes:
+                    if field in existing_indexes:
+                        required_indexes[field] = True
+            except Exception:
+                pass
+
+        return {
+            "collection_exists": exists,
+            "required_payload_indexes": required_indexes
+        }
+    except Exception as e:
+        logger.error(f"Failed to query vector status: {e}")
+        return {
+            "collection_exists": False,
+            "error": str(e)
+        }
+

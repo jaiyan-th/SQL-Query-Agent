@@ -82,27 +82,38 @@ def ensure_collection(collection_name: Optional[str] = None):
         )
 
     # Always ensure payload indexes exist for filter fields.
-    # create_payload_index is idempotent — safe to call even if the index already exists.
     try:
-        client.create_payload_index(
-            collection_name=col_name,
-            field_name="user_id",
-            field_schema=models.PayloadSchemaType.INTEGER,
-        )
-        client.create_payload_index(
-            collection_name=col_name,
-            field_name="connection_id",
-            field_schema=models.PayloadSchemaType.INTEGER,
-        )
-        client.create_payload_index(
-            collection_name=col_name,
-            field_name="workspace_id",
-            field_schema=models.PayloadSchemaType.KEYWORD,
-        )
-        logger.info(f"Payload indexes ensured for 'user_id', 'connection_id', and 'workspace_id' in '{col_name}'")
+        collection_info = client.get_collection(collection_name=col_name)
+        existing_indexes = collection_info.payload_schema or {}
+        
+        fields_to_index = {
+            "user_id": models.PayloadSchemaType.KEYWORD,
+            "workspace_id": models.PayloadSchemaType.KEYWORD,
+            "database_type": models.PayloadSchemaType.KEYWORD,
+            "table_name": models.PayloadSchemaType.KEYWORD,
+            "chunk_type": models.PayloadSchemaType.KEYWORD,
+        }
+        
+        for field, schema_type in fields_to_index.items():
+            if field in existing_indexes:
+                logger.info(f"Payload index for '{field}' already exists in '{col_name}'")
+                continue
+            try:
+                client.create_payload_index(
+                    collection_name=col_name,
+                    field_name=field,
+                    field_schema=schema_type,
+                )
+                logger.info(f"Created payload index for '{field}' in '{col_name}'")
+            except Exception as e:
+                err_msg = str(e).lower()
+                if "already exists" in err_msg or "duplicate" in err_msg or "already indexed" in err_msg:
+                    logger.info(f"Payload index for '{field}' already exists (caught exception)")
+                else:
+                    logger.warning(f"Failed to create payload index for '{field}': {e}")
+        logger.info(f"Payload indexes verified/created for workspace multi-tenancy in '{col_name}'")
     except Exception as idx_err:
-        # Log but don't raise — indexes may already exist or have a different name
-        logger.warning(f"Could not create payload indexes (may already exist): {idx_err}")
+        logger.warning(f"Could not verify or create payload indexes: {idx_err}")
 
 
 

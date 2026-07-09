@@ -55,8 +55,8 @@ def ingest_schema_sqlite(
             collection_name=col_name,
             points_selector=models.Filter(
                 must=[
-                    models.FieldCondition(key="user_id", match=models.MatchValue(value=user_id)),
-                    models.FieldCondition(key="workspace_id", match=models.MatchValue(value=workspace_id)),
+                    models.FieldCondition(key="user_id", match=models.MatchValue(value=str(user_id))),
+                    models.FieldCondition(key="workspace_id", match=models.MatchValue(value=str(workspace_id))),
                     models.FieldCondition(key="database_type", match=models.MatchValue(value="sqlite")),
                 ]
             ),
@@ -86,8 +86,8 @@ def ingest_schema_sqlite(
         point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{workspace_id}_{table_name.lower()}"))
 
         payload = {
-            "user_id": user_id,
-            "workspace_id": workspace_id,
+            "user_id": str(user_id),
+            "workspace_id": str(workspace_id),
             "database_type": "sqlite",
             "table_name": table_name,
             "chunk_type": "table_schema",
