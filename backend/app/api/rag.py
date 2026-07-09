@@ -203,26 +203,29 @@ async def get_vector_status():
             exists = False
 
         required_indexes = {
-            "user_id": False,
-            "workspace_id": False,
-            "database_type": False,
-            "table_name": False,
-            "chunk_type": False
+            "user_id": models.PayloadSchemaType.KEYWORD,
+            "workspace_id": models.PayloadSchemaType.KEYWORD,
+            "database_type": models.PayloadSchemaType.KEYWORD,
+            "table_name": models.PayloadSchemaType.KEYWORD,
+            "chunk_type": models.PayloadSchemaType.KEYWORD,
         }
+
+        index_status = {f: False for f in required_indexes}
 
         if exists:
             try:
                 collection_info = client.get_collection(collection_name=col_name)
                 existing_indexes = collection_info.payload_schema or {}
-                for field in required_indexes:
+                for field, required_type in required_indexes.items():
                     if field in existing_indexes:
-                        required_indexes[field] = True
+                        if existing_indexes[field].data_type == required_type:
+                            index_status[field] = True
             except Exception:
                 pass
 
         return {
             "collection_exists": exists,
-            "required_payload_indexes": required_indexes
+            "required_payload_indexes": index_status
         }
     except Exception as e:
         logger.error(f"Failed to query vector status: {e}")
@@ -251,8 +254,19 @@ async def repair_vector_indexes(
         collection_info = client.get_collection(col_name)
         existing_indexes = collection_info.payload_schema or {}
 
-        required_indexes = ["user_id", "workspace_id", "database_type", "table_name", "chunk_type"]
-        index_status = {f: (f in existing_indexes) for f in required_indexes}
+        required_indexes = {
+            "user_id": models.PayloadSchemaType.KEYWORD,
+            "workspace_id": models.PayloadSchemaType.KEYWORD,
+            "database_type": models.PayloadSchemaType.KEYWORD,
+            "table_name": models.PayloadSchemaType.KEYWORD,
+            "chunk_type": models.PayloadSchemaType.KEYWORD,
+        }
+        index_status = {}
+        for field, schema_type in required_indexes.items():
+            if field in existing_indexes:
+                index_status[field] = (existing_indexes[field].data_type == schema_type)
+            else:
+                index_status[field] = False
 
         return {
             "success": True,

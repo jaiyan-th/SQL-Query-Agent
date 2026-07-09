@@ -70,11 +70,26 @@ def ensure_payload_indexes(collection_name: str):
         existing_schema = collection_info.payload_schema or {}
         logger.info(f"Existing payload indexes: {list(existing_schema.keys())}")
         
-        missing_indexes = [f for f in required_indexes if f not in existing_schema]
-        logger.info(f"Missing payload indexes: {missing_indexes}")
-
         for field_name, field_schema in required_indexes.items():
-            if field_name not in existing_schema:
+            needs_recreate = False
+            if field_name in existing_schema:
+                current_type = existing_schema[field_name].data_type
+                if current_type != field_schema:
+                    logger.info(f"Payload index for '{field_name}' exists but has wrong type '{current_type}'. Deleting and recreating as '{field_schema}'...")
+                    try:
+                        client.delete_payload_index(
+                            collection_name=collection_name,
+                            field_name=field_name,
+                        )
+                        needs_recreate = True
+                    except Exception as del_err:
+                        logger.warning(f"Failed to delete old payload index for '{field_name}': {del_err}")
+                else:
+                    logger.info(f"Payload index for '{field_name}' already exists and matches required type {field_schema}.")
+            else:
+                needs_recreate = True
+
+            if needs_recreate:
                 try:
                     logger.info(f"Creating payload index: {field_name} ({field_schema})")
                     client.create_payload_index(
