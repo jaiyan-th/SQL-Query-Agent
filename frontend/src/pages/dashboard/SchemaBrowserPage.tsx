@@ -124,7 +124,7 @@ export const SchemaBrowserPage: React.FC = () => {
                         ? 'border-[#53D6CC] text-[#53D6CC]'
                         : 'border-[#252B36] text-[#B8C0CC]'
                     }`}>
-                      {t.table_name}
+                      main.{t.table_name}
                     </div>
                     {idx < filteredTables.length - 1 && (
                       <div className="flex items-center px-2">
@@ -165,7 +165,7 @@ export const SchemaBrowserPage: React.FC = () => {
                           <Table size={16} className={isSelected ? 'text-[#53D6CC]' : 'text-[#7E8A99]'} />
                           <div className="text-left">
                             <h4 className={`text-xs font-bold font-mono-code ${isSelected ? 'text-[#53D6CC]' : 'text-[#E6E8EF]'}`}>
-                              {t.table_name}
+                              main.{t.table_name}
                             </h4>
                             <p className="text-[10px] text-[#7E8A99] mt-0.5 font-mono-code">
                               {t.columns.length} columns · {t.row_count} rows
@@ -184,7 +184,7 @@ export const SchemaBrowserPage: React.FC = () => {
                   <>
                     <h4 className="font-mono-code text-[10px] text-[#7E8A99] uppercase tracking-wider flex items-center gap-1.5">
                       <Columns size={12} className="text-[#53D6CC]" />
-                      <span>Schema Field Details: {selectedTable.table_name}</span>
+                      <span>Schema Field Details: main.{selectedTable.table_name}</span>
                     </h4>
 
                     <div className="bg-[#151922] border border-[#252B36] rounded-[6px] overflow-hidden">

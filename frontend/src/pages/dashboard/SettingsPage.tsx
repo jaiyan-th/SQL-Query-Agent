@@ -4,44 +4,57 @@ import {
   KeyRound, 
   ShieldAlert, 
   Sliders, 
-  Eye, 
-  EyeOff, 
   CheckCircle
 } from 'lucide-react';
+import { getLlmStatus } from '../../services/api';
 
 export const SettingsPage: React.FC = () => {
-  // Key state
-  const [groqKey, setGroqKey] = useState('');
-  const [geminiKey, setGeminiKey] = useState('');
-  const [showGroq, setShowGroq] = useState(false);
-  const [showGemini, setShowGemini] = useState(false);
+  // Model status states
+  const [groqConfigured, setGroqConfigured] = useState(false);
+  const [geminiConfigured, setGeminiConfigured] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState(true);
+  const [statusError, setStatusError] = useState('');
   
   // Model & options settings
   const [activeModel, setActiveModel] = useState('groq-llama3-70b');
   const [strictGuardrails, setStrictGuardrails] = useState(true);
-  const [autoRunSelect, setAutoRunSelect] = useState(true);
+  const [autoRunSelect, setAutoRunSelect] = useState(false);
   
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
+    // Proactively clear existing keys from localStorage for security
+    localStorage.removeItem('querygen_groq_key');
+    localStorage.removeItem('querygen_gemini_key');
+
     // Load config from localStorage
-    const savedGroq = localStorage.getItem('querygen_groq_key') || '';
-    const savedGemini = localStorage.getItem('querygen_gemini_key') || '';
     const savedModel = localStorage.getItem('querygen_active_model') || 'groq-llama3-70b';
     const savedStrict = localStorage.getItem('querygen_strict_guardrails') !== 'false';
-    const savedAutoRun = localStorage.getItem('querygen_auto_run_select') !== 'false';
+    const savedAutoRun = localStorage.getItem('querygen_auto_run_select') === 'true';
 
-    setGroqKey(savedGroq);
-    setGeminiKey(savedGemini);
     setActiveModel(savedModel);
     setStrictGuardrails(savedStrict);
     setAutoRunSelect(savedAutoRun);
+
+    const fetchStatus = async () => {
+      try {
+        setLoadingStatus(true);
+        const status = await getLlmStatus();
+        setGroqConfigured(status.groq_configured);
+        setGeminiConfigured(status.gemini_configured);
+      } catch (err: any) {
+        console.error('Failed to fetch LLM status', err);
+        setStatusError('Failed to retrieve model provider status.');
+      } finally {
+        setLoadingStatus(false);
+      }
+    };
+    
+    fetchStatus();
   }, []);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    localStorage.setItem('querygen_groq_key', groqKey);
-    localStorage.setItem('querygen_gemini_key', geminiKey);
     localStorage.setItem('querygen_active_model', activeModel);
     localStorage.setItem('querygen_strict_guardrails', String(strictGuardrails));
     localStorage.setItem('querygen_auto_run_select', String(autoRunSelect));
@@ -49,6 +62,7 @@ export const SettingsPage: React.FC = () => {
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };
+
 
   return (
     <DashboardLayout>
@@ -59,7 +73,7 @@ export const SettingsPage: React.FC = () => {
             User Settings
           </h2>
           <p className="text-xs text-[#7E8A99] mt-1 font-semibold leading-relaxed">
-            Configure LLM credentials, execution safety thresholds, and active workspace configurations.
+            Configure LLM routing preference, execution safety thresholds, and active workspace configurations.
           </p>
         </div>
 
@@ -72,59 +86,61 @@ export const SettingsPage: React.FC = () => {
         )}
 
         <form onSubmit={handleSave} className="flex flex-col gap-6 font-sans-ui">
-          {/* Card 1: API keys */}
+          {/* Card 1: Model Provider Status */}
           <div className="bg-[#151922] border border-[#252B36] rounded-[6px] p-6 flex flex-col gap-5">
             <h3 className="text-sm font-bold text-[#E6E8EF] uppercase tracking-wider flex items-center gap-2.5">
               <KeyRound size={16} className="text-[#53D6CC]" />
-              <span>Model Provider Credentials</span>
+              <span>Model Provider Status</span>
             </h3>
 
+            <p className="text-xs text-[#7E8A99] leading-relaxed">
+              LLM provider credentials are managed securely through backend environment variables.
+            </p>
+
+            {statusError && (
+              <div className="text-xs text-[#EF5F5F] font-semibold">
+                ⚠️ {statusError}
+              </div>
+            )}
+
             <div className="flex flex-col gap-4">
-              {/* Groq Key */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-[#B8C0CC] flex items-center gap-1.5 select-none">
-                  <span>Groq API Key</span>
-                  <span className="text-[10px] text-slate-500 font-mono">(Primary Gen Engine)</span>
-                </label>
-                <div className="relative flex items-center">
-                  <input 
-                    type={showGroq ? 'text' : 'password'} 
-                    value={groqKey}
-                    onChange={(e) => setGroqKey(e.target.value)}
-                    placeholder="gsk_..."
-                    className="w-full bg-[#10141B] border border-[#252B36] hover:border-[#313846] focus:border-[#53D6CC] rounded px-3 py-2 text-xs font-mono text-[#E6E8EF] outline-none"
-                  />
-                  <button 
-                    type="button"
-                    onClick={() => setShowGroq(!showGroq)}
-                    className="absolute right-3 text-slate-500 hover:text-slate-300 border-none bg-transparent cursor-pointer p-1"
-                  >
-                    {showGroq ? <EyeOff size={14} /> : <Eye size={14} />}
-                  </button>
+              {/* Groq Status */}
+              <div className="flex items-center justify-between bg-[#10141B] border border-[#252B36] rounded px-4 py-3">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs font-bold text-[#E6E8EF]">Groq Primary Engine</span>
+                  <span className="text-[10px] text-slate-500 font-mono">(llama-3.3-70b-versatile)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {loadingStatus ? (
+                    <span className="text-xs font-mono text-[#7E8A99] animate-pulse">Checking...</span>
+                  ) : (
+                    <>
+                      <span className={`w-2 h-2 rounded-full ${groqConfigured ? 'bg-[#3ECF8E]' : 'bg-[#EF5F5F]'}`} />
+                      <span className={`text-xs font-mono font-bold ${groqConfigured ? 'text-[#3ECF8E]' : 'text-[#EF5F5F]'}`}>
+                        {groqConfigured ? 'Connected' : 'Not Configured'}
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
 
-              {/* Gemini Key */}
-              <div className="flex flex-col gap-1.5 mt-2">
-                <label className="text-xs font-bold text-[#B8C0CC] flex items-center gap-1.5 select-none">
-                  <span>Gemini API Key</span>
-                  <span className="text-[10px] text-slate-500 font-mono">(Fallback Agent Engine)</span>
-                </label>
-                <div className="relative flex items-center">
-                  <input 
-                    type={showGemini ? 'text' : 'password'} 
-                    value={geminiKey}
-                    onChange={(e) => setGeminiKey(e.target.value)}
-                    placeholder="AIzaSy..."
-                    className="w-full bg-[#10141B] border border-[#252B36] hover:border-[#313846] focus:border-[#53D6CC] rounded px-3 py-2 text-xs font-mono text-[#E6E8EF] outline-none"
-                  />
-                  <button 
-                    type="button"
-                    onClick={() => setShowGemini(!showGemini)}
-                    className="absolute right-3 text-slate-500 hover:text-slate-300 border-none bg-transparent cursor-pointer p-1"
-                  >
-                    {showGemini ? <EyeOff size={14} /> : <Eye size={14} />}
-                  </button>
+              {/* Gemini Status */}
+              <div className="flex items-center justify-between bg-[#10141B] border border-[#252B36] rounded px-4 py-3">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs font-bold text-[#E6E8EF]">Gemini Fallback Engine</span>
+                  <span className="text-[10px] text-slate-500 font-mono">(gemini-1.5-flash)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {loadingStatus ? (
+                    <span className="text-xs font-mono text-[#7E8A99] animate-pulse">Checking...</span>
+                  ) : (
+                    <>
+                      <span className={`w-2 h-2 rounded-full ${geminiConfigured ? 'bg-[#3ECF8E]' : 'bg-[#EF5F5F]'}`} />
+                      <span className={`text-xs font-mono font-bold ${geminiConfigured ? 'text-[#3ECF8E]' : 'text-[#EF5F5F]'}`}>
+                        {geminiConfigured ? 'Connected' : 'Not Configured'}
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

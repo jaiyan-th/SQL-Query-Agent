@@ -57,6 +57,7 @@ def ingest_schema_sqlite(
                 must=[
                     models.FieldCondition(key="user_id", match=models.MatchValue(value=user_id)),
                     models.FieldCondition(key="workspace_id", match=models.MatchValue(value=workspace_id)),
+                    models.FieldCondition(key="database_type", match=models.MatchValue(value="sqlite")),
                 ]
             ),
         )

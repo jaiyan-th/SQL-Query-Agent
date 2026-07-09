@@ -301,7 +301,11 @@ async def get_sqlite_schema(
         from app.db.schema_introspect import SchemaIntrospector
         from sqlalchemy import create_engine, text
 
-        engine = create_engine(f"sqlite:///{workspace.stored_file_path}")
+        sqlite_uri = f"file:{workspace.stored_file_path}?mode=ro"
+        engine = create_engine(
+            f"sqlite:///{sqlite_uri}",
+            connect_args={"uri": True},
+        )
         introspector = SchemaIntrospector(engine)
         schemas = introspector.get_all_schemas()
 

@@ -69,7 +69,11 @@ async def ingest_database_schema(
 
     try:
         # Build a read-only SQLite engine from the stored file path
-        engine = create_engine(f"sqlite:///{workspace.stored_file_path}")
+        sqlite_uri = f"file:{workspace.stored_file_path}?mode=ro"
+        engine = create_engine(
+            f"sqlite:///{sqlite_uri}",
+            connect_args={"uri": True},
+        )
 
         result = ingest_schema_sqlite(
             engine=engine,

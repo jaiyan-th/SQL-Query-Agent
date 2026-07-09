@@ -108,17 +108,8 @@ export const QueryAgentPage: React.FC = () => {
       const ws = await getActiveSqliteWorkspace();
       setWorkspace(ws);
       setStep('SQLITE_UPLOADED');
-
-      // Automatically trigger schema indexing
-      setStep('SCHEMA_INDEXING');
-      await ingestSchema();
-      
-      // Refresh workspace metadata
-      const wsFinal = await getActiveSqliteWorkspace();
-      setWorkspace(wsFinal);
-      setStep('READY_TO_ASK');
     } catch (err: any) {
-      setError(err.message || 'Upload or schema indexing failed.');
+      setError(err.message || 'Upload failed.');
       setStep('ERROR');
     }
   };

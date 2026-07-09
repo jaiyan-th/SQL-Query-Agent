@@ -58,6 +58,8 @@ def get_engine(database_url: Optional[str] = None):
             pool_size=1,
             max_overflow=0,
             pool_timeout=10,
+            pool_recycle=300,
+            pool_pre_ping=True,
             echo=settings.APP_ENV == "development"
         )
 
@@ -69,7 +71,8 @@ def get_engine(database_url: Optional[str] = None):
             pool_size=5,
             max_overflow=10,
             pool_timeout=30,
-            pool_recycle=3600,
+            pool_recycle=300,
+            pool_pre_ping=True,
             echo=settings.APP_ENV == "development"
         )
         logger.info(f"Created PostgreSQL engine for: {_engine.url.host}")

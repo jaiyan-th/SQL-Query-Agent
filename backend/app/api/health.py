@@ -58,3 +58,17 @@ async def health_check():
             "query_timeout_seconds": settings.QUERY_TIMEOUT_SECONDS,
         }
     }
+
+
+@router.get("/settings/llm-status")
+async def get_llm_status():
+    """
+    Get configured status of LLM providers.
+    """
+    return {
+        "groq_configured": bool(settings.GROQ_API_KEY.strip()) if settings.GROQ_API_KEY else False,
+        "gemini_configured": bool(settings.GEMINI_API_KEY.strip()) if settings.GEMINI_API_KEY else False,
+        "primary_provider": "groq",
+        "fallback_provider": "gemini"
+    }
+

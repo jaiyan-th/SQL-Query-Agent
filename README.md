@@ -171,3 +171,17 @@ npm run build
 | `POST` | `/api/generate-and-run` | `{"question": "..."}` | Function 2: Generate + execute SQL |
 | `GET` | `/api/history` | - | Get query history logs |
 | `GET` | `/api/suggestions` | - | Fetch database schema-grounded suggestions |
+
+---
+
+## 🌐 Production Readiness & Render Deployment Notes
+
+Because Render's free or basic web services use ephemeral file systems, local database files uploaded to the filesystem will be lost whenever the container scales down, restarts, or deploys new code.
+
+To ensure uploaded SQLite workspace databases persist across restarts:
+1. **Configure a Render Persistent Disk**:
+   - In your Render Web Service dashboard, navigate to **Disks**.
+   - Create a disk with name `sqlite-storage` and mount it at `/app/storage` (size: 10GB is recommended).
+2. **Environment Variable Configuration**:
+   - Set `SQLITE_STORAGE_DIR="/app/storage/sqlite_workspaces"`.
+   - The backend will automatically write and load all user workspace `.sqlite` files inside this persistent directory, keeping them completely safe across service redeploys and scaling events.

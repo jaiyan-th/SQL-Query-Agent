@@ -21,6 +21,10 @@ services:
     region: oregon
     dockerfilePath: ./backend/Dockerfile
     plan: starter
+    disk:
+      name: sqlite-storage
+      mountPath: /app/storage
+      sizeGB: 10
     envVars:
       - key: APP_NAME
         value: "QueryGen AI"
@@ -53,6 +57,8 @@ services:
         value: "2"
       - key: ALLOW_WRITE
         value: "false"
+      - key: SQLITE_STORAGE_DIR
+        value: "/app/storage/sqlite_workspaces"
     healthCheckPath: /api/health
 
   # ── React Frontend (Static site) ──────────────────────────

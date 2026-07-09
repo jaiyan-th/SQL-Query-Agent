@@ -227,3 +227,16 @@ export async function getSqliteSchema(): Promise<SchemaResponse> {
 export async function getQueryHistory(): Promise<QueryHistoryResponse> {
   return apiFetch<QueryHistoryResponse>('/api/history');
 }
+
+export interface LLMStatusResponse {
+  groq_configured: boolean;
+  gemini_configured: boolean;
+  primary_provider: string;
+  fallback_provider: string;
+}
+
+/** Get configured status of LLM providers. */
+export async function getLlmStatus(): Promise<LLMStatusResponse> {
+  return apiFetch<LLMStatusResponse>('/api/settings/llm-status');
+}
+

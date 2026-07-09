@@ -61,8 +61,8 @@ async def generate_and_run_endpoint(
         # Read-only SQLite URI — prevents any writes to the uploaded file
         sqlite_uri = f"file:{workspace.stored_file_path}?mode=ro"
         engine = create_engine(
-            f"sqlite:///{workspace.stored_file_path}",
-            connect_args={"uri": False},
+            f"sqlite:///{sqlite_uri}",
+            connect_args={"uri": True},
         )
 
         return generate_and_execute(

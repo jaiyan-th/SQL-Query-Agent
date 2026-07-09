@@ -34,6 +34,7 @@ def generate_sql_core(
         question=question,
         user_id=user_id,
         workspace_id=workspace_id,
+        database_type=database_type,
         top_k=3,
     )
     schema_contexts = retrieval["schema_contexts"]

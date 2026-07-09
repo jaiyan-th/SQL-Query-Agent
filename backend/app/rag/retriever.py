@@ -28,18 +28,19 @@ def retrieve_schema_context(
     question: str,
     user_id: int,
     workspace_id: str,
+    database_type: str = "sqlite",
     top_k: int = 3,
 ) -> Dict[str, Any]:
     """
     Retrieve relevant schema context from Qdrant.
-    Filters by user_id and workspace_id to enforce multi-tenant isolation.
+    Filters by user_id, workspace_id, and database_type to enforce multi-tenant isolation.
     """
     try:
         client = get_qdrant_client()
         col_name = settings.QDRANT_COLLECTION_NAME
 
         logger.info(
-            f"RAG lookup: user_id={user_id}, workspace_id={workspace_id}"
+            f"RAG lookup: user_id={user_id}, workspace_id={workspace_id}, database_type={database_type}"
         )
 
         from fastembed import TextEmbedding
@@ -50,6 +51,7 @@ def retrieve_schema_context(
             must=[
                 models.FieldCondition(key="user_id", match=models.MatchValue(value=user_id)),
                 models.FieldCondition(key="workspace_id", match=models.MatchValue(value=workspace_id)),
+                models.FieldCondition(key="database_type", match=models.MatchValue(value=database_type)),
             ]
         )
 
