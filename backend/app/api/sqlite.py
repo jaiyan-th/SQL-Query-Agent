@@ -11,6 +11,7 @@ import sqlite3
 import datetime
 import shutil
 import logging
+from pathlib import Path
 
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -27,6 +28,8 @@ router = APIRouter()
 
 ALLOWED_EXTENSIONS = {".db", ".sqlite", ".sqlite3"}
 
+BASE_DIR = Path(__file__).resolve().parents[2]
+SQLITE_STORAGE_DIR = Path(os.getenv("SQLITE_STORAGE_DIR", BASE_DIR / "storage" / "sqlite_workspaces")).resolve()
 
 # ── Response schemas ──────────────────────────────────────────────────────────
 
@@ -57,34 +60,34 @@ class DeleteSqliteWorkspaceResponse(BaseModel):
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-def _get_storage_root() -> str:
+def _get_storage_root() -> Path:
     """Return the absolute path to the SQLite storage directory, creating it if needed."""
-    root = os.path.abspath(settings.SQLITE_STORAGE_DIR)
-    os.makedirs(root, exist_ok=True)
-    return root
+    SQLITE_STORAGE_DIR.mkdir(parents=True, exist_ok=True)
+    return SQLITE_STORAGE_DIR
 
 
-def _workspace_dir(user_id: int, workspace_id: str) -> str:
+def _workspace_dir(user_id: int, workspace_id: str) -> Path:
     """Return (and create) the directory for one workspace."""
-    path = os.path.join(_get_storage_root(), str(user_id), workspace_id)
-    os.makedirs(path, exist_ok=True)
+    path = _get_storage_root() / str(user_id) / workspace_id
+    path.mkdir(parents=True, exist_ok=True)
     return path
 
 
-def _validate_sqlite_file(file_path: str) -> int:
+def _validate_sqlite_file(file_path: Path) -> int:
     """
     Open the file with sqlite3 and run SELECT on sqlite_master.
-    Returns the number of tables found.
+    Returns the number of tables found, excluding sqlite_ internal tables.
     Raises ValueError if the file is not a valid SQLite database.
     """
     try:
-        conn = sqlite3.connect(f"file:{file_path}?mode=ro", uri=True)
+        conn = sqlite3.connect(f"file:{file_path.as_posix()}?mode=ro", uri=True)
         cursor = conn.execute("SELECT name FROM sqlite_master WHERE type='table';")
-        tables = [row[0] for row in cursor.fetchall()]
+        tables = [row[0] for row in cursor.fetchall() if not row[0].startswith("sqlite_")]
         conn.close()
         return len(tables)
     except Exception as e:
         raise ValueError(f"Invalid SQLite database file: {str(e)}")
+
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
@@ -114,48 +117,55 @@ async def upload_sqlite_file(
             detail=f"Unsupported file type '{ext}'. Please upload a .db, .sqlite, or .sqlite3 file.",
         )
 
-    # --- Size check (read into memory in chunks) -------------------------
-    max_bytes = settings.MAX_SQLITE_UPLOAD_MB * 1024 * 1024
-    chunks = []
-    total = 0
-    while True:
-        chunk = await file.read(256 * 1024)  # 256 KB
-        if not chunk:
-            break
-        total += len(chunk)
-        if total > max_bytes:
-            raise HTTPException(
-                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-                detail=f"File exceeds the {settings.MAX_SQLITE_UPLOAD_MB} MB upload limit.",
-            )
-        chunks.append(chunk)
-
-    file_bytes = b"".join(chunks)
-
-    # --- Save to secure path (never the original filename) ---------------
+    # --- Generate workspace id and absolute path -----------------
     workspace_id = str(uuid.uuid4())
-    dest_dir = _workspace_dir(current_user.id, workspace_id)
-    stored_path = os.path.join(dest_dir, "database.sqlite")
+    
+    # Ensure directory exists before saving
+    SQLITE_STORAGE_DIR.mkdir(parents=True, exist_ok=True)
+    workspace_dir = SQLITE_STORAGE_DIR / str(current_user.id) / workspace_id
+    workspace_dir.mkdir(parents=True, exist_ok=True)
+    stored_file_path = workspace_dir / "database.sqlite"
 
+    # --- Save physically using safe file writing -----------------
     try:
-        with open(stored_path, "wb") as f:
-            f.write(file_bytes)
-    except OSError as e:
+        with open(stored_file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+    except Exception as e:
         logger.error(f"Failed to write SQLite file: {e}")
+        # Clean up dir if created
+        shutil.rmtree(workspace_dir, ignore_errors=True)
         raise HTTPException(status_code=500, detail="Failed to store uploaded file.")
+
+    # After saving, verify
+    if not stored_file_path.exists():
+        raise HTTPException(status_code=500, detail="SQLite file was not saved successfully.")
+    
+    total_size = stored_file_path.stat().st_size
+    if total_size == 0:
+        shutil.rmtree(workspace_dir, ignore_errors=True)
+        raise HTTPException(status_code=400, detail="Uploaded SQLite file is empty.")
+
+    # Enforce size limit
+    max_bytes = settings.MAX_SQLITE_UPLOAD_MB * 1024 * 1024
+    if total_size > max_bytes:
+        shutil.rmtree(workspace_dir, ignore_errors=True)
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"File exceeds the {settings.MAX_SQLITE_UPLOAD_MB} MB upload limit.",
+        )
 
     # --- Validate SQLite -------------------------------------------------
     try:
-        table_count = _validate_sqlite_file(stored_path)
+        table_count = _validate_sqlite_file(stored_file_path)
     except ValueError as e:
-        os.remove(stored_path)
+        shutil.rmtree(workspace_dir, ignore_errors=True)
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=str(e),
         )
 
     if table_count == 0:
-        os.remove(stored_path)
+        shutil.rmtree(workspace_dir, ignore_errors=True)
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="The uploaded SQLite database contains no tables.",
@@ -172,8 +182,8 @@ async def upload_sqlite_file(
         id=workspace_id,
         user_id=current_user.id,
         original_filename=original_name,
-        stored_file_path=stored_path,
-        file_size_bytes=total,
+        stored_file_path=str(stored_file_path),
+        file_size_bytes=total_size,
         table_count=table_count,
         is_active=True,
         schema_indexed=False,
@@ -214,7 +224,7 @@ async def get_active_sqlite_workspace(
     if not workspace:
         return ActiveSqliteWorkspaceResponse(has_active_sqlite=False)
 
-    if not os.path.exists(workspace.stored_file_path):
+    if not Path(workspace.stored_file_path).exists():
         logger.warning(
             f"Active workspace file not found at '{workspace.stored_file_path}'. "
             "Deactivating workspace automatically."
@@ -258,8 +268,9 @@ async def delete_active_sqlite_workspace(
 
     # Remove file from disk
     try:
-        workspace_dir = os.path.dirname(workspace.stored_file_path)
-        if os.path.exists(workspace_dir):
+        sqlite_path = Path(workspace.stored_file_path).resolve()
+        workspace_dir = sqlite_path.parent
+        if workspace_dir.exists() and workspace_dir.is_dir():
             shutil.rmtree(workspace_dir, ignore_errors=True)
     except Exception as e:
         logger.warning(f"Failed to remove workspace files: {e}")
@@ -292,7 +303,8 @@ async def get_sqlite_schema(
     if not workspace:
         return {"tables": []}
 
-    if not os.path.exists(workspace.stored_file_path):
+    sqlite_path = Path(workspace.stored_file_path).resolve()
+    if not sqlite_path.exists():
         workspace.is_active = False
         db.commit()
         return {"tables": []}
@@ -301,11 +313,7 @@ async def get_sqlite_schema(
         from app.db.schema_introspect import SchemaIntrospector
         from sqlalchemy import create_engine, text
 
-        sqlite_uri = f"file:{workspace.stored_file_path}?mode=ro"
-        engine = create_engine(
-            f"sqlite:///{sqlite_uri}",
-            connect_args={"uri": True},
-        )
+        engine = create_engine(f"sqlite:///{sqlite_path.as_posix()}")
         introspector = SchemaIntrospector(engine)
         schemas = introspector.get_all_schemas()
 

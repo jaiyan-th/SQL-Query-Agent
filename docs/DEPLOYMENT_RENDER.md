@@ -29,16 +29,29 @@ Follow these steps to deploy **QueryGen AI** using **Render Blueprints** (`rende
 
 ## 💾 Persistent Storage for SQLite Workspaces (Important)
 
-By default, Render container filesystems are ephemeral. If your `querygen-backend` web service restarts or updates, all uploaded SQLite database files in `storage/sqlite_workspaces/` will be lost.
+If deployed on Render, uploaded SQLite files must be stored on a persistent disk or external object storage. The normal Render container filesystem is ephemeral, meaning files will be lost after a container restart, rebuild, or redeploy.
 
-To prevent data loss and keep user databases persistent:
-1. Go to your **Render Dashboard** and select your `querygen-backend` service.
-2. Navigate to **Disks** -> **Add Disk**.
-3. Configure the disk properties:
-   - **Name**: `sqlite-storage`
-   - **Mount Path**: `/app/storage/sqlite_workspaces`
-   - **Size**: `1 GB` to `10 GB` (depending on expected database uploads)
-4. Save and deploy. Render will mount a persistent volume at that path.
+For Render:
+1. **Configure a Persistent Disk**:
+   - Go to your **Render Dashboard** and select your `querygen-backend` service.
+   - Navigate to **Disks** -> **Add Disk**.
+   - Configure the disk properties:
+     - **Name**: `sqlite-storage`
+     - **Mount Path**: `/var/data/sqlite_workspaces`
+     - **Size**: `1 GB` to `10 GB` (depending on expected database uploads)
+   - Click **Save**.
+
+2. **Set the Environment Variable**:
+   - Navigate to the **Environment** tab of your backend service.
+   - Add the environment variable:
+     - **Key**: `SQLITE_STORAGE_DIR`
+     - **Value**: `/var/data/sqlite_workspaces`
+   - Example:
+     ```env
+     SQLITE_STORAGE_DIR=/var/data/sqlite_workspaces
+     ```
+
+If a persistent disk is not configured, the application will still work temporarily until the service restarts or redeploys, but users will need to re-upload their SQLite database files after each redeploy or container restart.
 
 ---
 

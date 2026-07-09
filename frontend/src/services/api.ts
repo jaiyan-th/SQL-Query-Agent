@@ -58,10 +58,11 @@ export interface DeleteSqliteWorkspaceResponse {
 
 export interface IngestSchemaResponse {
   success: boolean;
-  indexed_tables: number;
-  indexed_documents: number;
-  workspace_id: string;
-  database_type: string;
+  indexed_tables?: number;
+  indexed_documents?: number;
+  workspace_id?: string;
+  database_type?: string;
+  message?: string;
 }
 
 export interface RAGStatusResponse {

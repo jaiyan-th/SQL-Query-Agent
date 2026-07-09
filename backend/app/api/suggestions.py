@@ -2,6 +2,7 @@
 Dynamic query suggestions based on the user's active SQLite workspace tables.
 """
 import logging
+from pathlib import Path
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import create_engine
@@ -31,11 +32,8 @@ async def get_suggestions(
         return {"suggestions": []}
 
     try:
-        sqlite_uri = f"file:{workspace.stored_file_path}?mode=ro"
-        engine = create_engine(
-            f"sqlite:///{sqlite_uri}",
-            connect_args={"uri": True},
-        )
+        sqlite_path = Path(workspace.stored_file_path).resolve()
+        engine = create_engine(f"sqlite:///{sqlite_path.as_posix()}")
         introspector = SchemaIntrospector(engine)
         tables = [t.lower() for t in introspector.get_table_names()]
     except Exception as e:

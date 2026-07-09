@@ -2,6 +2,7 @@
 Function 2: Generate SQLite SQL and execute it on the uploaded SQLite file.
 """
 import logging
+from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Depends, status
 from sqlalchemy import create_engine
@@ -58,12 +59,8 @@ async def generate_and_run_endpoint(
             f"Generate & Run: user={current_user.id}, workspace={workspace.id}"
         )
 
-        # Read-only SQLite URI — prevents any writes to the uploaded file
-        sqlite_uri = f"file:{workspace.stored_file_path}?mode=ro"
-        engine = create_engine(
-            f"sqlite:///{sqlite_uri}",
-            connect_args={"uri": True},
-        )
+        sqlite_path = Path(workspace.stored_file_path).resolve()
+        engine = create_engine(f"sqlite:///{sqlite_path.as_posix()}")
 
         return generate_and_execute(
             db=db,

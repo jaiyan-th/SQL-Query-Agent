@@ -120,16 +120,42 @@ export const QueryAgentPage: React.FC = () => {
       setStep('SCHEMA_INDEXING');
       
       // Index schema
-      await ingestSchema();
+      const res = await ingestSchema();
+      if (!res.success) {
+        throw new Error(res.message || 'Schema indexing failed.');
+      }
       
       // Refresh workspace metadata
       const ws = await getActiveSqliteWorkspace();
       setWorkspace(ws);
       setStep('READY_TO_ASK');
     } catch (err: any) {
-      setError(err.message || 'Schema indexing failed.');
+      const errMsg = err.message || '';
+      if (errMsg.includes('unable to open database file') || errMsg.includes('sqlite3.OperationalError') || errMsg.includes('database.sqlite')) {
+        setError("Schema indexing failed because the uploaded SQLite workspace file could not be opened. Please reset the workspace and upload the database again.");
+      } else {
+        setError(errMsg || 'Schema indexing failed.');
+      }
       setStep('ERROR');
     }
+  };
+
+  const handleResetWorkspace = async () => {
+    try {
+      await deleteActiveSqliteWorkspace();
+    } catch (err) {
+      console.error(err);
+    }
+    setWorkspace(null);
+    setQueryResult(null);
+    setQuestion('');
+    setError('');
+    setStep('NEED_SQLITE_UPLOAD');
+  };
+
+  const handleRetryIngestion = () => {
+    setError('');
+    setStep('SQLITE_UPLOADED');
   };
 
   const handleQuerySubmit = async () => {
@@ -233,13 +259,21 @@ export const QueryAgentPage: React.FC = () => {
               <div className="terminal-card p-6 flex flex-col gap-4 items-center justify-center min-h-[220px]">
                 <span className="text-[#EF5F5F] text-3xl">⚠️</span>
                 <h4 className="text-sm font-bold text-[#E6E8EF]">An error occurred during onboarding</h4>
-                <p className="text-xs text-[#7E8A99]">{error}</p>
-                <button 
-                  onClick={() => { setStep('NEED_SQLITE_UPLOAD'); setError(''); }} 
-                  className="btn-primary mt-2"
-                >
-                  Reset Workspace
-                </button>
+                <p className="text-xs text-[#7E8A99] max-w-md text-center">{error}</p>
+                <div className="flex gap-4 mt-2">
+                  <button 
+                    onClick={handleRetryIngestion} 
+                    className="btn-primary px-4 py-2 text-xs"
+                  >
+                    Retry Ingestion
+                  </button>
+                  <button 
+                    onClick={handleResetWorkspace} 
+                    className="btn-danger px-4 py-2 text-xs"
+                  >
+                    Reset Workspace
+                  </button>
+                </div>
               </div>
             ) : (
               <QueryInput

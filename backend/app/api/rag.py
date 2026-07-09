@@ -5,6 +5,9 @@ Uses the active SQLite workspace (not a database connection URL).
 """
 import datetime
 import logging
+import os
+from typing import Optional
+from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Depends, status
 from sqlalchemy.orm import Session
@@ -22,6 +25,9 @@ from qdrant_client.http import models
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+BASE_DIR = Path(__file__).resolve().parents[2]
+SQLITE_STORAGE_DIR = Path(os.getenv("SQLITE_STORAGE_DIR", BASE_DIR / "storage" / "sqlite_workspaces")).resolve()
+
 
 class RAGStatusResponse(BaseModel):
     schema_indexed: bool
@@ -32,10 +38,12 @@ class RAGStatusResponse(BaseModel):
 
 class SchemaIngestAPIResponse(BaseModel):
     success: bool
-    indexed_tables: int
-    indexed_documents: int
-    workspace_id: str
+    indexed_tables: Optional[int] = None
+    indexed_documents: Optional[int] = None
+    workspace_id: Optional[str] = None
     database_type: str = "sqlite"
+    message: Optional[str] = None
+
 
 
 @router.post("/rag/ingest-schema", response_model=SchemaIngestAPIResponse)
@@ -53,27 +61,41 @@ async def ingest_database_schema(
     ).first()
 
     if not workspace:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Please upload a SQLite database file before indexing schema.",
+        return SchemaIngestAPIResponse(
+            success=False,
+            message="Please upload a SQLite database file before indexing schema."
         )
 
-    import os
-    if not os.path.exists(workspace.stored_file_path):
-        workspace.is_active = False
-        db.commit()
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Active SQLite database file was not found on the server. Please re-upload your SQLite database file.",
+    sqlite_path = Path(workspace.stored_file_path).resolve()
+    
+    # Debug-safe logging
+    logger.info(f"SQLite storage dir resolved: {SQLITE_STORAGE_DIR.as_posix()}")
+    logger.info(f"Workspace file exists: {sqlite_path.exists()}")
+    if sqlite_path.exists():
+        logger.info(f"File size: {sqlite_path.stat().st_size} bytes")
+    logger.info(f"Workspace ID: {workspace.id}")
+    logger.info(f"Table count: {workspace.table_count}")
+
+    if not sqlite_path.exists():
+        return SchemaIngestAPIResponse(
+            success=False,
+            message="SQLite workspace file is missing. Please re-upload the database."
+        )
+
+    if not sqlite_path.is_file():
+        return SchemaIngestAPIResponse(
+            success=False,
+            message="SQLite workspace path is not a valid file."
+        )
+
+    if sqlite_path.stat().st_size == 0:
+        return SchemaIngestAPIResponse(
+            success=False,
+            message="SQLite workspace file is empty. Please upload a valid database."
         )
 
     try:
-        # Build a read-only SQLite engine from the stored file path
-        sqlite_uri = f"file:{workspace.stored_file_path}?mode=ro"
-        engine = create_engine(
-            f"sqlite:///{sqlite_uri}",
-            connect_args={"uri": True},
-        )
+        engine = create_engine(f"sqlite:///{sqlite_path.as_posix()}")
 
         result = ingest_schema_sqlite(
             engine=engine,
@@ -119,8 +141,8 @@ async def get_rag_status(
     if not workspace:
         return RAGStatusResponse(schema_indexed=False)
 
-    import os
-    if not os.path.exists(workspace.stored_file_path):
+    sqlite_path = Path(workspace.stored_file_path).resolve()
+    if not sqlite_path.exists():
         workspace.is_active = False
         db.commit()
         return RAGStatusResponse(schema_indexed=False)

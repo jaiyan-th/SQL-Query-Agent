@@ -26,7 +26,7 @@ class SchemaIntrospector:
         try:
             raw_tables = self.inspector.get_table_names()
             exclude_tables = {"querygen_users", "querygen_connections", "querygen_history", "users"}
-            return [t for t in raw_tables if t.lower() not in exclude_tables]
+            return [t for t in raw_tables if t.lower() not in exclude_tables and not t.lower().startswith("sqlite_")]
         except Exception as e:
             logger.error(f"Failed to get table names: {str(e)}")
             return []
