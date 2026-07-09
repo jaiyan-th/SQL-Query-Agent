@@ -95,6 +95,11 @@ async def ingest_database_schema(
         )
 
     try:
+        from app.rag.qdrant_client import ensure_collection, ensure_payload_indexes
+        col_name = settings.QDRANT_COLLECTION_NAME
+        ensure_collection(col_name)
+        ensure_payload_indexes(col_name)
+
         engine = create_engine(f"sqlite:///{sqlite_path.as_posix()}")
 
         result = ingest_schema_sqlite(
@@ -225,4 +230,41 @@ async def get_vector_status():
             "collection_exists": False,
             "error": str(e)
         }
+
+
+@router.post("/rag/repair-vector-indexes")
+async def repair_vector_indexes(
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """
+    Repair payload indexes in Qdrant Cloud collection.
+    """
+    from app.rag.qdrant_client import ensure_collection, ensure_payload_indexes
+    col_name = settings.QDRANT_COLLECTION_NAME
+    try:
+        ensure_collection(col_name)
+        ensure_payload_indexes(col_name)
+
+        # Verify index status
+        client = get_qdrant_client()
+        collection_info = client.get_collection(col_name)
+        existing_indexes = collection_info.payload_schema or {}
+
+        required_indexes = ["user_id", "workspace_id", "database_type", "table_name", "chunk_type"]
+        index_status = {f: (f in existing_indexes) for f in required_indexes}
+
+        return {
+            "success": True,
+            "message": "Qdrant payload indexes repaired successfully.",
+            "collection_name": col_name,
+            "indexes": index_status
+        }
+    except Exception as e:
+        logger.error(f"Manual index repair failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Index repair failed: {str(e)}"
+        )
+
 

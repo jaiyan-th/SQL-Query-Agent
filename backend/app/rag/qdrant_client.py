@@ -51,6 +51,50 @@ def get_qdrant_client() -> QdrantClient:
     return _qdrant_client
 
 
+def ensure_payload_indexes(collection_name: str):
+    """
+    Ensure required payload indexes exist on the Qdrant collection.
+    """
+    client = get_qdrant_client()
+    required_indexes = {
+        "user_id": models.PayloadSchemaType.KEYWORD,
+        "workspace_id": models.PayloadSchemaType.KEYWORD,
+        "database_type": models.PayloadSchemaType.KEYWORD,
+        "table_name": models.PayloadSchemaType.KEYWORD,
+        "chunk_type": models.PayloadSchemaType.KEYWORD,
+    }
+
+    try:
+        logger.info(f"Ensuring Qdrant collection payload indexes for '{collection_name}'...")
+        collection_info = client.get_collection(collection_name)
+        existing_schema = collection_info.payload_schema or {}
+        logger.info(f"Existing payload indexes: {list(existing_schema.keys())}")
+        
+        missing_indexes = [f for f in required_indexes if f not in existing_schema]
+        logger.info(f"Missing payload indexes: {missing_indexes}")
+
+        for field_name, field_schema in required_indexes.items():
+            if field_name not in existing_schema:
+                try:
+                    logger.info(f"Creating payload index: {field_name} ({field_schema})")
+                    client.create_payload_index(
+                        collection_name=collection_name,
+                        field_name=field_name,
+                        field_schema=field_schema,
+                    )
+                    logger.info(f"Created payload index: {field_name}")
+                except Exception as e:
+                    message = str(e).lower()
+                    if "already exists" in message or "already has" in message or "already indexed" in message or "duplicate" in message:
+                        logger.info(f"Payload index for '{field_name}' already exists (caught exception).")
+                        continue
+                    raise
+        logger.info("Payload index repair complete.")
+    except Exception as e:
+        logger.error(f"Failed to ensure payload indexes: {e}")
+        raise e
+
+
 def ensure_collection(collection_name: Optional[str] = None):
     """
     Ensure the Qdrant collection exists and is configured with correct dimensions.
@@ -80,40 +124,11 @@ def ensure_collection(collection_name: Optional[str] = None):
                 distance=models.Distance.COSINE
             )
         )
+        ensure_payload_indexes(col_name)
+    else:
+        logger.info(f"Collection '{col_name}' exists. Checking indexes...")
+        ensure_payload_indexes(col_name)
 
-    # Always ensure payload indexes exist for filter fields.
-    try:
-        collection_info = client.get_collection(collection_name=col_name)
-        existing_indexes = collection_info.payload_schema or {}
-        
-        fields_to_index = {
-            "user_id": models.PayloadSchemaType.KEYWORD,
-            "workspace_id": models.PayloadSchemaType.KEYWORD,
-            "database_type": models.PayloadSchemaType.KEYWORD,
-            "table_name": models.PayloadSchemaType.KEYWORD,
-            "chunk_type": models.PayloadSchemaType.KEYWORD,
-        }
-        
-        for field, schema_type in fields_to_index.items():
-            if field in existing_indexes:
-                logger.info(f"Payload index for '{field}' already exists in '{col_name}'")
-                continue
-            try:
-                client.create_payload_index(
-                    collection_name=col_name,
-                    field_name=field,
-                    field_schema=schema_type,
-                )
-                logger.info(f"Created payload index for '{field}' in '{col_name}'")
-            except Exception as e:
-                err_msg = str(e).lower()
-                if "already exists" in err_msg or "duplicate" in err_msg or "already indexed" in err_msg:
-                    logger.info(f"Payload index for '{field}' already exists (caught exception)")
-                else:
-                    logger.warning(f"Failed to create payload index for '{field}': {e}")
-        logger.info(f"Payload indexes verified/created for workspace multi-tenancy in '{col_name}'")
-    except Exception as idx_err:
-        logger.warning(f"Could not verify or create payload indexes: {idx_err}")
 
 
 
