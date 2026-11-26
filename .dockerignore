@@ -1,0 +1,13 @@
+**
+!sql-agent/
+!sql-agent/frontend/
+!sql-agent/frontend/package*.json
+!sql-agent/frontend/index.html
+!sql-agent/frontend/*.config.js
+!sql-agent/frontend/src/
+!sql-agent/frontend/src/**
+!sql-agent/backend/
+!sql-agent/backend/requirements.txt
+!sql-agent/backend/seed_db.py
+!sql-agent/backend/app/
+!sql-agent/backend/app/*.py

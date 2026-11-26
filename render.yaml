@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: querygen-backend
+    runtime: docker
+    region: oregon
+    plan: starter
+    disk:
+      name: sqlite-storage
+      mountPath: /app/storage
+      sizeGB: 10
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/ready
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: WORKSPACE_USER
+        value: analyst
+      - key: WORKSPACE_PASSWORD
+        generateValue: true
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: llama-3.3-70b-versatile
+      - key: DB_URL
+        value: sqlite:///retail.sqlite
