@@ -30,7 +30,12 @@ jobs:
         run: |
           export WORKSPACE_USER=ci WORKSPACE_PASSWORD="$(openssl rand -hex 24)" GROQ_API_KEY=test-fixture
           docker run -d --name sql-query-agent -e WORKSPACE_USER -e WORKSPACE_PASSWORD -e GROQ_API_KEY -p 127.0.0.1:8090:8000 sql-query-agent
-          curl --fail --retry 10 --retry-connrefused http://localhost:8090/api/health
-          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8090/api/schema)" = 401
-          curl --fail -u "$WORKSPACE_USER:$WORKSPACE_PASSWORD" http://localhost:8090/api/schema
-          curl --fail -u "$WORKSPACE_USER:$WORKSPACE_PASSWORD" http://localhost:8090/ | grep 'SQL Query Agent'
+          if ! (
+            curl --fail --retry 15 --retry-delay 1 --retry-all-errors http://127.0.0.1:8090/api/health &&
+            test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8090/api/schema)" = 401 &&
+            curl --fail -u "$WORKSPACE_USER:$WORKSPACE_PASSWORD" http://127.0.0.1:8090/api/schema &&
+            curl --fail -u "$WORKSPACE_USER:$WORKSPACE_PASSWORD" http://127.0.0.1:8090/ | grep 'SQL Query Agent'
+          ); then
+            docker logs sql-query-agent || true
+            exit 1
+          fi
