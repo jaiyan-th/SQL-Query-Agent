@@ -12,7 +12,7 @@ from httpx import Request, Response
 from groq import AuthenticationError, RateLimitError
 from sqlalchemy.exc import DBAPIError
 
-from app import agent, config, db
+from app import agent, auth, config, db
 from app.main import app
 from app.safety import validate
 from app.tools import dispatch
@@ -37,12 +37,17 @@ class AgentTests(unittest.TestCase):
         seed(target)
         cls.engine = db.make_engine("sqlite:///" + target.as_posix())
         cls.replace = patch.object(db, "engine", cls.engine)
+        cls.auth_db = patch.object(auth, "AUTH_DB_PATH", Path(cls.temp.name) / "auth.sqlite")
         cls.replace.start()
+        cls.auth_db.start()
         cls.api = TestClient(app)
+        signup_res = cls.api.post("/api/auth/signup", json={"name": "Test Analyst", "email": "analyst@example.com", "password": "password123"})
+        cls.headers = {"Authorization": f"Bearer {signup_res.json()['token']}"}
 
     @classmethod
     def tearDownClass(cls):
         cls.api.close()
+        cls.auth_db.stop()
         cls.replace.stop()
         cls.engine.dispose()
         cls.temp.cleanup()
@@ -60,7 +65,7 @@ class AgentTests(unittest.TestCase):
         self.mock.side_effect = [MagicMock(choices=[MagicMock(message=r)]) for r in replies]
 
     def chat(self, prompt):
-        return self.api.post("/api/chat", json={"session_id": "suite", "message": prompt})
+        return self.api.post("/api/chat", json={"session_id": "suite", "message": prompt}, headers=self.headers)
 
     def test_count_follow_up_and_reset(self):
         self.script(tool_reply(("list_tables", {}), ("describe_table", {"table_name":"customers"})),
@@ -80,7 +85,7 @@ class AgentTests(unittest.TestCase):
         follow = self.chat("Only show customers from Tamil Nadu").json()
         self.assertEqual(len(follow["rows"]), 4)
         self.assertIn("How many customers", str(self.mock.call_args.kwargs["messages"]))
-        self.api.post("/api/reset", json={"session_id":"suite"}).raise_for_status()
+        self.api.post("/api/reset", json={"session_id":"suite"}, headers=self.headers).raise_for_status()
         self.assertNotIn("suite", agent.sessions)
 
     def test_seed_queries_and_schema(self):
@@ -91,7 +96,7 @@ class AgentTests(unittest.TestCase):
         trend = dispatch("run_sql", {"query": f"SELECT strftime('%Y-%m',order_date) AS month,SUM(total_inr) AS revenue FROM orders WHERE order_date >= '{year}-01-01' GROUP BY month ORDER BY month"})
         self.assertTrue(trend["rows"])
         self.assertIsInstance(trend["rows"][0][1], int)
-        self.assertEqual(len(self.api.get("/api/schema").json()["tables"]), 4)
+        self.assertEqual(len(self.api.get("/api/schema", headers=self.headers).json()["tables"]), 4)
         desc = dispatch("describe_table", {"table_name":"orders"})
         self.assertEqual(len(desc["sample"]["rows"]), 3)
         self.assertTrue(desc["foreign_keys"])
@@ -129,8 +134,16 @@ class AgentTests(unittest.TestCase):
             self.assertEqual(response.status_code, status)
             self.assertTrue(response.json()["detail"])
 
-    def test_readiness_and_security_headers(self):
-        reply = self.api.get("/api/schema")
+    def test_auth_readiness_and_security_headers(self):
+        self.assertEqual(self.api.get("/api/schema").status_code, 401)
+        self.assertEqual(self.api.post("/api/reset", json={"session_id": "suite"}).status_code, 401)
+        login_res = self.api.post("/api/auth/login", json={"email": "analyst@example.com", "password": "password123"})
+        self.assertEqual(login_res.status_code, 200)
+        token = login_res.json()["token"]
+        me_res = self.api.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
+        self.assertEqual(me_res.status_code, 200)
+        self.assertEqual(me_res.json()["user"]["email"], "analyst@example.com")
+        reply = self.api.get("/api/schema", headers={"Authorization": f"Bearer {token}"})
         self.assertEqual(reply.status_code, 200)
         self.assertEqual(reply.headers["Cache-Control"], "no-store")
         self.assertEqual(reply.headers["X-Content-Type-Options"], "nosniff")
@@ -159,7 +172,7 @@ class AgentTests(unittest.TestCase):
 
     def test_schema_tools_and_read_only_connection(self):
         self.assertEqual(self.api.get("/api/health").status_code, 200)
-        self.assertEqual(len(self.api.get("/api/schema").json()["tables"]), 4)
+        self.assertEqual(len(self.api.get("/api/schema", headers=self.headers).json()["tables"]), 4)
         before = dispatch("describe_table", {"table_name":"orders"})
         self.assertEqual(before["primary_key"], ["order_id"])
         self.assertEqual(len(before["sample"]["rows"]), 3)
@@ -182,7 +195,7 @@ class AgentTests(unittest.TestCase):
         refusal = self.chat("Delete all orders").json()
         self.assertIn("only read", refusal["answer"])
         self.assertEqual(refusal["sql_used"], [])
-        self.api.post("/api/reset", json={"session_id":"suite"}).raise_for_status()
+        self.api.post("/api/reset", json={"session_id":"suite"}, headers=self.headers).raise_for_status()
         self.assertNotIn("suite", agent.sessions)
 
 

@@ -33,7 +33,9 @@ jobs:
           if ! (
             curl --fail --retry 15 --retry-delay 1 --retry-all-errors http://127.0.0.1:8090/api/health &&
             curl --fail http://127.0.0.1:8090/api/ready &&
-            curl --fail http://127.0.0.1:8090/api/schema &&
+            test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8090/api/schema)" = 401 &&
+            TOKEN="$(curl --fail -s -X POST http://127.0.0.1:8090/api/auth/signup -H 'Content-Type: application/json' -d '{"name":"CI User","email":"ci@example.com","password":"password123"}' | python3 -c 'import sys,json; print(json.load(sys.stdin)["token"])')" &&
+            curl --fail -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8090/api/schema &&
             curl --fail http://127.0.0.1:8090/ | grep 'SQL Query Agent'
           ); then
             docker logs sql-query-agent || true

@@ -1,12 +1,12 @@
 from threading import BoundedSemaphore
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from sqlalchemy.exc import SQLAlchemyError
 
-from . import agent, config, db, tools
+from . import agent, auth, config, db, tools
 from .config import BASE, FRONTEND_ORIGINS
 
 app = FastAPI(title="SQL Query Agent", openapi_url=None if config.APP_ENV == "production" else "/openapi.json")
@@ -25,7 +25,18 @@ async def security_headers(request: Request, call_next):
 
 
 app.add_middleware(CORSMiddleware, allow_origins=FRONTEND_ORIGINS, allow_methods=["GET", "POST"],
-                   allow_headers=["Content-Type"])
+                   allow_headers=["Content-Type", "Authorization"])
+
+
+class SignupRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    email: str = Field(min_length=3, max_length=254)
+    password: str = Field(min_length=1, max_length=256)
+
+
+class LoginRequest(BaseModel):
+    email: str = Field(min_length=3, max_length=254)
+    password: str = Field(min_length=1, max_length=256)
 
 
 class Session(BaseModel):
@@ -34,6 +45,21 @@ class Session(BaseModel):
 
 class Question(Session):
     message: str = Field(min_length=1, max_length=4000)
+
+
+@app.post("/api/auth/signup")
+def signup(request: SignupRequest):
+    return auth.signup(request.name, request.email, request.password)
+
+
+@app.post("/api/auth/login")
+def login(request: LoginRequest):
+    return auth.login(request.email, request.password)
+
+
+@app.get("/api/auth/me")
+def me(user: dict = Depends(auth.require_user)):
+    return {"user": user}
 
 
 @app.get("/api/health")
@@ -54,7 +80,7 @@ def ready():
 
 
 @app.get("/api/schema")
-def get_schema():
+def get_schema(_user: dict = Depends(auth.require_user)):
     try:
         return {"tables": tools.schema()}
     except SQLAlchemyError:
@@ -62,7 +88,7 @@ def get_schema():
 
 
 @app.post("/api/chat")
-def chat(request: Question):
+def chat(request: Question, _user: dict = Depends(auth.require_user)):
     message = request.message.strip()
     if not message:
         raise HTTPException(422, "Enter a question.")
@@ -79,7 +105,7 @@ def chat(request: Question):
 
 
 @app.post("/api/reset")
-def reset(request: Session):
+def reset(request: Session, _user: dict = Depends(auth.require_user)):
     agent.reset(request.session_id)
     return {"status": "cleared"}
 

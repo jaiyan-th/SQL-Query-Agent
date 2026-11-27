@@ -1,11 +1,11 @@
 import React, { useState } from 'react'
-import { Database, Layers3, Plus, ChevronRight, Table2, X, Sun, Moon, RotateCw } from 'lucide-react'
+import { Database, Layers3, Plus, ChevronRight, Table2, X, LogOut, RotateCw } from 'lucide-react'
 
 export function Mark() {
   return <span className="brand-mark" aria-hidden="true"><Layers3 size={23} strokeWidth={2.4}/></span>
 }
 
-export default function Sidebar({ tables, state, reload, open, close, newChat, busy, light, theme }) {
+export default function Sidebar({ tables, state, reload, open, close, newChat, busy, user, onLogout }) {
   const [expanded, setExpanded] = useState({})
   return <>
     {open && <button aria-label="Close sidebar" className="scrim" onClick={close}/>}
@@ -24,7 +24,15 @@ export default function Sidebar({ tables, state, reload, open, close, newChat, b
           {expanded[table.name] && <ul>{table.columns.map(c => <li key={c.name}><span>{c.name}</span><small>{c.type}</small></li>)}</ul>}
         </div>)}
       </div>
-      <button className="theme" onClick={theme}>{light ? <Moon size={17}/> : <Sun size={17}/>} {light ? 'Dark appearance' : 'Light appearance'}</button>
+      <div className="user-bar">
+        <div className="user-meta">
+          <strong>{user?.name || 'Analyst'}</strong>
+          <span>{user?.email || ''}</span>
+        </div>
+        <button className="sign-out" onClick={onLogout} aria-label="Sign out" title="Sign out">
+          <LogOut size={16}/>
+        </button>
+      </div>
     </aside>
   </>
 }
