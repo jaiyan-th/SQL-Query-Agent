@@ -90,7 +90,7 @@ Set `DB_URL` in the backend environment and restart FastAPI. The SQLite seed scr
 | PostgreSQL | `postgresql+psycopg2://report_reader:PASSWORD@HOST:5432/analytics` | A dedicated login with CONNECT, schema USAGE and SELECT on approved tables in the current search path. |
 | MySQL 8 | `mysql+pymysql://report_reader:PASSWORD@HOST:3306/analytics` | A dedicated login with SELECT on approved tables in the selected database. |
 
-Use a least-privileged reader account with no administrative, file, write or privileged routine grants. URL-encode special characters in credentials. Use provider-required TLS settings for remote databases. The release serves one analyst workspace. Set APP_ENV=production, WORKSPACE_USER, and a unique WORKSPACE_PASSWORD of at least 16 characters in the server environment. Use an HTTPS reverse proxy for external access. The browser prompts for workspace credentials. Signed-in users share the database reader’s privileges. Keep Uvicorn on one worker so conversations stay in one process. Four concurrent chats are allowed. Render uses the root Dockerfile and the same-origin UI and API. Configure the secrets in the Render dashboard before deploying.
+Use a least-privileged reader account with no administrative, file, write or privileged routine grants. URL-encode special characters in credentials. Use provider-required TLS settings for remote databases. Set `APP_ENV=production` and `GROQ_API_KEY` in the server environment, and use an HTTPS reverse proxy for external access. Keep Uvicorn on one worker so conversations stay in one process. Four concurrent chats are allowed. Render uses the root Dockerfile and the same-origin UI and API. Configure the secrets in the Render dashboard before deploying.
 
 ## API and checks
 

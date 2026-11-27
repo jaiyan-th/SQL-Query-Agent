@@ -129,16 +129,16 @@ class AgentTests(unittest.TestCase):
             self.assertEqual(response.status_code, status)
             self.assertTrue(response.json()["detail"])
 
-    def test_workspace_auth_and_readiness(self):
-        with patch.object(config, "WORKSPACE_USER", "analyst"), patch.object(config, "WORKSPACE_PASSWORD", "test-password"):
-            self.assertEqual(self.api.get("/api/schema").status_code, 401)
-            self.assertEqual(self.api.post("/api/reset", json={"session_id":"suite"}).status_code, 401)
-            reply = self.api.get("/api/schema", auth=("analyst", "test-password"))
-            self.assertEqual(reply.status_code, 200)
-            self.assertEqual(reply.headers["Cache-Control"], "no-store")
-            self.assertEqual(self.api.get("/api/ready").status_code, 200)
-            with patch.object(config, "GROQ_API_KEY", ""):
-                self.assertEqual(self.api.get("/api/ready").status_code, 503)
+    def test_readiness_and_security_headers(self):
+        reply = self.api.get("/api/schema")
+        self.assertEqual(reply.status_code, 200)
+        self.assertEqual(reply.headers["Cache-Control"], "no-store")
+        self.assertEqual(reply.headers["X-Content-Type-Options"], "nosniff")
+        self.assertEqual(reply.headers["X-Frame-Options"], "DENY")
+        self.assertEqual(reply.headers["Referrer-Policy"], "no-referrer")
+        self.assertEqual(self.api.get("/api/ready").status_code, 200)
+        with patch.object(config, "GROQ_API_KEY", ""):
+            self.assertEqual(self.api.get("/api/ready").status_code, 503)
 
     def test_failed_sql_cannot_be_reported_as_an_answer(self):
         self.script(tool_reply(("list_tables", {}), ("describe_table", {"table_name":"orders"})),

@@ -1,30 +1,20 @@
-import base64
-import secrets
 from threading import BoundedSemaphore
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.exc import SQLAlchemyError
 
 from . import agent, config, db, tools
-from .config import BASE, FRONTEND_ORIGIN
+from .config import BASE, FRONTEND_ORIGINS
 
 app = FastAPI(title="SQL Query Agent", openapi_url=None if config.APP_ENV == "production" else "/openapi.json")
 chat_slots = BoundedSemaphore(4)
 
 
 @app.middleware("http")
-async def workspace_access(request: Request, call_next):
-    if config.WORKSPACE_USER and request.url.path not in {"/api/health", "/api/ready"}:
-        expected = base64.b64encode(f"{config.WORKSPACE_USER}:{config.WORKSPACE_PASSWORD}".encode())
-        method, _, credential = request.headers.get("authorization", "").partition(" ")
-        if method.lower() != "basic" or not secrets.compare_digest(credential.encode(), expected):
-            return JSONResponse({"detail": "Sign in to the workspace."}, status_code=401,
-                                headers={"WWW-Authenticate": 'Basic realm="SQL Query Agent", charset="UTF-8"',
-                                         "Cache-Control": "no-store"})
+async def security_headers(request: Request, call_next):
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Referrer-Policy"] = "no-referrer"
@@ -34,8 +24,8 @@ async def workspace_access(request: Request, call_next):
     return response
 
 
-app.add_middleware(CORSMiddleware, allow_origins=[FRONTEND_ORIGIN] if FRONTEND_ORIGIN else [], allow_methods=["GET", "POST"],
-                   allow_headers=["Content-Type", "Authorization"])
+app.add_middleware(CORSMiddleware, allow_origins=FRONTEND_ORIGINS, allow_methods=["GET", "POST"],
+                   allow_headers=["Content-Type"])
 
 
 class Session(BaseModel):
