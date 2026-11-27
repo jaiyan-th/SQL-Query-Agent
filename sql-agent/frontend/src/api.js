@@ -35,5 +35,8 @@ export const signup = (name, email, password) => request('auth/signup', { name, 
 export const login = (email, password) => request('auth/login', { email, password })
 export const getMe = () => request('auth/me')
 export const getSchema = () => request('schema')
+export const connectDb = db_url => request('db/connect', { db_url })
+export const uploadDb = (filename, data_base64) => request('db/upload', { filename, data_base64 })
+export const resetDb = () => request('db/reset', {})
 export const ask = (session_id, message) => request('chat', { session_id, message })
 export const reset = session_id => request('reset', { session_id })

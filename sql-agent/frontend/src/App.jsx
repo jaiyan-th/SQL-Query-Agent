@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { Menu, SquareTerminal, LockKeyhole, X } from 'lucide-react'
 import { ask, getMe, getSchema, getToken, reset, setToken } from './api'
 import AuthPage from './components/AuthPage'
+import ConnectDbModal from './components/ConnectDbModal'
 import Sidebar from './components/Sidebar'
 import Chat from './components/Chat'
 
@@ -12,6 +13,8 @@ export default function App() {
   const [checkingAuth, setCheckingAuth] = useState(() => !!getToken())
   const [messages, setMessages] = useState([])
   const [tables, setTables] = useState([])
+  const [dbInfo, setDbInfo] = useState(null)
+  const [connectOpen, setConnectOpen] = useState(false)
   const [state, setState] = useState('loading')
   const [busy, setBusy] = useState(false)
   const [draft, setDraft] = useState('')
@@ -32,13 +35,26 @@ export default function App() {
   async function reload() {
     setState('loading')
     try {
-      setTables((await getSchema()).tables)
+      const res = await getSchema()
+      setTables(res.tables)
+      if (res.db) setDbInfo(res.db)
       setState('ready')
     } catch (e) {
       if (e.status === 401) { logout(); return }
       setState('error')
       setError(e.message)
     }
+  }
+
+  function handleDbConnected(res) {
+    setTables(res.tables || [])
+    if (res.db) setDbInfo(res.db)
+    setState('ready')
+    setMessages([])
+    setDraft('')
+    setOpen(false)
+    reset(session.current).catch(() => {})
+    session.current = crypto.randomUUID()
   }
 
   useEffect(() => {
@@ -89,10 +105,14 @@ export default function App() {
   }
 
   return <div className="shell light">
-    <Sidebar {...{ tables, state, reload, open, newChat, busy, user }} onLogout={logout} close={() => setOpen(false)} />
+    <Sidebar {...{ tables, state, reload, open, newChat, busy, user, dbInfo }} onOpenConnect={() => setConnectOpen(true)} onLogout={logout} close={() => setOpen(false)} />
     <main><header><button className="mobile icon" aria-label="Open sidebar" onClick={() => setOpen(true)}><Menu/></button>
-      <SquareTerminal size={17}/><strong>Query workspace</strong><span className="read-only"><LockKeyhole size={12}/> Read only</span></header>
+      <SquareTerminal size={17}/><strong>Query workspace</strong>
+      <button type="button" className="read-only" onClick={() => setConnectOpen(true)} title="Connect another read-only database">
+        <LockKeyhole size={12}/> Read only{dbInfo ? ` · ${dbInfo.dialect}` : ''}
+      </button></header>
       <Chat {...{ messages, busy, send, draft, setDraft }}/></main>
+    <ConnectDbModal open={connectOpen} onClose={() => setConnectOpen(false)} onConnected={handleDbConnected} currentDb={dbInfo} />
     {error && <div role="alert" className="toast">{error}<button aria-label="Dismiss error" onClick={() => setError('')}><X size={16}/></button></div>}
   </div>
 }

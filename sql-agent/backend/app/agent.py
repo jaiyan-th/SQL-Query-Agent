@@ -5,7 +5,7 @@ from collections import OrderedDict
 from datetime import date
 from threading import Lock
 
-from groq import APIError, AuthenticationError, Groq, RateLimitError
+from groq import APIError, AuthenticationError, Groq, NotFoundError, RateLimitError
 
 from . import config, db
 from .tools import TOOLS, dispatch, schema
@@ -31,14 +31,20 @@ class AgentError(Exception):
 
 
 def complete(client, messages):
+    model = config.GROQ_MODEL
     for attempt in range(3):
         try:
             return client.chat.completions.create(
-                model=config.GROQ_MODEL, messages=messages, tools=TOOLS,
+                model=model, messages=messages, tools=TOOLS,
                 tool_choice="auto", temperature=0, max_tokens=1200,
             ).choices[0].message
         except AuthenticationError as exc:
             raise AgentError(401, "Groq rejected the API key. Update GROQ_API_KEY in backend/.env and restart the backend.") from exc
+        except NotFoundError as exc:
+            if model != "openai/gpt-oss-120b":
+                model = "openai/gpt-oss-120b"
+                continue
+            raise AgentError(502, f"Groq model '{model}' is unavailable for this API key.") from exc
         except RateLimitError as exc:
             if attempt == 2:
                 raise AgentError(429, "Groq is busy. Please try again in a moment.") from exc

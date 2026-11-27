@@ -47,6 +47,15 @@ class Question(Session):
     message: str = Field(min_length=1, max_length=4000)
 
 
+class DbConnectRequest(BaseModel):
+    db_url: str = Field(min_length=5, max_length=2000)
+
+
+class DbUploadRequest(BaseModel):
+    filename: str = Field(min_length=1, max_length=255)
+    data_base64: str = Field(min_length=1)
+
+
 @app.post("/api/auth/signup")
 def signup(request: SignupRequest):
     return auth.signup(request.name, request.email, request.password)
@@ -82,9 +91,45 @@ def ready():
 @app.get("/api/schema")
 def get_schema(_user: dict = Depends(auth.require_user)):
     try:
-        return {"tables": tools.schema()}
+        return {"tables": tools.schema(), "db": db.current_db_info()}
     except SQLAlchemyError:
         raise HTTPException(503, "Database unavailable. Check DB_URL or run the SQLite seed script.")
+
+
+@app.get("/api/db")
+def get_db_info(_user: dict = Depends(auth.require_user)):
+    return {"db": db.current_db_info()}
+
+
+@app.post("/api/db/connect")
+def connect_db(request: DbConnectRequest, _user: dict = Depends(auth.require_user)):
+    try:
+        info = db.switch_engine(request.db_url)
+        return {"status": "connected", "db": info, "tables": tools.schema()}
+    except ValueError as exc:
+        raise HTTPException(422, str(exc))
+    except SQLAlchemyError as exc:
+        raise HTTPException(400, f"Could not connect to database: {str(exc).splitlines()[0][:200]}")
+
+
+@app.post("/api/db/upload")
+def upload_db(request: DbUploadRequest, _user: dict = Depends(auth.require_user)):
+    try:
+        info = db.save_uploaded_sqlite(request.filename, request.data_base64)
+        return {"status": "connected", "db": info, "tables": tools.schema()}
+    except ValueError as exc:
+        raise HTTPException(422, str(exc))
+    except SQLAlchemyError as exc:
+        raise HTTPException(400, f"Could not open SQLite database: {str(exc).splitlines()[0][:200]}")
+
+
+@app.post("/api/db/reset")
+def reset_db(_user: dict = Depends(auth.require_user)):
+    try:
+        info = db.switch_engine(config.DB_URL)
+        return {"status": "connected", "db": info, "tables": tools.schema()}
+    except Exception as exc:
+        raise HTTPException(500, f"Could not restore default database: {exc}")
 
 
 @app.post("/api/chat")

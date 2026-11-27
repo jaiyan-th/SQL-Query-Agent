@@ -1,18 +1,21 @@
 import React, { useState } from 'react'
-import { Database, Layers3, Plus, ChevronRight, Table2, X, LogOut, RotateCw } from 'lucide-react'
+import { Database, Layers3, Plus, ChevronRight, Table2, X, LogOut, RotateCw, PlugZap } from 'lucide-react'
 
 export function Mark() {
   return <span className="brand-mark" aria-hidden="true"><Layers3 size={23} strokeWidth={2.4}/></span>
 }
 
-export default function Sidebar({ tables, state, reload, open, close, newChat, busy, user, onLogout }) {
+export default function Sidebar({ tables, state, reload, open, close, newChat, busy, user, onLogout, onOpenConnect, dbInfo }) {
   const [expanded, setExpanded] = useState({})
   return <>
     {open && <button aria-label="Close sidebar" className="scrim" onClick={close}/>}
     <aside className={'rail ' + (open ? 'opened' : '')}>
       <div className="brand"><Mark/><span>SQL Query Agent</span><button onClick={close} className="mobile icon" aria-label="Close sidebar"><X/></button></div>
-      <button className="new-chat" disabled={busy} onClick={newChat}><Plus size={17}/> New chat</button>
-      <div className="schema-head"><span>DATABASE SCHEMA</span><Database size={14}/></div>
+      <div className="rail-actions">
+        <button className="new-chat" disabled={busy} onClick={newChat}><Plus size={17}/> New chat</button>
+        <button className="connect-db-btn" disabled={busy} onClick={onOpenConnect}><PlugZap size={16}/> Connect database</button>
+      </div>
+      <div className="schema-head"><span>{dbInfo?.label ? `${dbInfo.dialect.toUpperCase()} · ${dbInfo.label}` : 'DATABASE SCHEMA'}</span><Database size={14}/></div>
       <div className="schema-list">
         {state === 'loading' && <p>Loading schema…</p>}
         {state === 'error' && <button className="plain" onClick={reload}><RotateCw size={14}/> Retry schema</button>}

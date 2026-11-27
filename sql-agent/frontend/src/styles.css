@@ -93,3 +93,28 @@ pre {padding:12px;white-space:pre-wrap;overflow-wrap:anywhere;background:var(--p
 .auth-form input:focus {border-color:var(--accent);background:var(--panel)}
 .auth-error {background:#fdf2f0;border:1px solid #d99b8c;color:#8c2d19;border-radius:8px;padding:10px 12px;font-size:13px}
 .auth-submit {display:flex;align-items:center;justify-content:center;gap:8px;margin-top:4px;padding:11px 16px;border-radius:9px;background:var(--accent);color:var(--bg);font-weight:600;font-size:14px}
+
+.rail-actions {display:flex;flex-direction:column;gap:8px;margin:24px 0 26px}
+.rail-actions .new-chat {margin:0}
+.connect-db-btn {display:flex;align-items:center;justify-content:center;gap:8px;background:var(--panel);color:var(--fg);border:1px solid var(--border);padding:9px 10px;border-radius:8px;font-weight:500;font-size:13px}
+.connect-db-btn:hover {border-color:var(--accent);color:var(--accent)}
+header button.read-only {background:var(--panel)}
+header button.read-only:hover {border-color:var(--accent);color:var(--fg)}
+
+.modal-backdrop {position:fixed;inset:0;z-index:20;background:rgba(26,40,34,.35);display:grid;place-items:center;padding:20px}
+.modal-card {width:min(100%, 500px);background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:24px;box-shadow:0 18px 48px rgba(26,40,34,.14)}
+.modal-head {display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
+.modal-title {display:flex;align-items:center;gap:9px;color:var(--accent)}
+.modal-title h2 {margin:0;font-size:18px;font-weight:650;color:var(--fg)}
+.modal-sub {margin:0 0 16px;font-size:13px;color:var(--muted)}
+.modal-sub code,.ro-note code {font-family:monospace;font-size:12px;background:var(--rail);padding:1px 5px;border-radius:4px}
+.auth-tabs button {display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.preset-row {display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:12px;color:var(--muted)}
+.preset-chip {border:1px solid var(--border);background:var(--bg);border-radius:6px;padding:3px 9px;font-size:12px;font-weight:500;color:var(--fg)}
+.preset-chip:hover {border-color:var(--accent);color:var(--accent)}
+.ro-note {display:flex;align-items:flex-start;gap:8px;padding:10px 12px;border-radius:9px;background:var(--tint);color:var(--accent);font-size:12px;line-height:1.45}
+.ro-note svg {flex:none;margin-top:2px}
+.modal-actions {display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:4px}
+.modal-actions .auth-submit {margin-top:0}
+.btn-secondary {display:inline-flex;align-items:center;gap:6px;padding:10px 14px;border:1px solid var(--border);border-radius:9px;background:var(--bg);font-size:13px;font-weight:500}
+.btn-secondary:hover {border-color:var(--accent)}
