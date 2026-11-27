@@ -1,12 +1,19 @@
 import React, { useState } from 'react'
-import { Database, Upload, Link2, RotateCcw, X, Loader2, ShieldCheck } from 'lucide-react'
+import { Database, Upload, Link2, RotateCcw, X, Loader2, ShieldCheck, Copy, Check, ChevronDown } from 'lucide-react'
 import { connectDb, resetDb, uploadDb } from '../api'
 
 const PRESETS = [
-  { label: 'PostgreSQL', url: 'postgresql+psycopg2://readonly_user:password@localhost:5432/analytics' },
-  { label: 'MySQL', url: 'mysql+pymysql://readonly_user:password@localhost:3306/analytics' },
+  { label: 'Supabase', url: 'postgresql+psycopg2://sql_agent_reader:PASSWORD@db.PROJECT_REF.supabase.co:5432/postgres?sslmode=require' },
+  { label: 'Neon', url: 'postgresql+psycopg2://sql_agent_reader:PASSWORD@ep-ENDPOINT.REGION.aws.neon.tech/neondb?sslmode=require' },
+  { label: 'MySQL', url: 'mysql+pymysql://sql_agent_reader:PASSWORD@localhost:3306/analytics' },
   { label: 'SQLite', url: 'sqlite:///retail.sqlite' },
 ]
+
+const READONLY_SQL = `CREATE ROLE sql_agent_reader WITH LOGIN PASSWORD 'CHANGE_ME_STRONG_PASSWORD';
+GRANT USAGE ON SCHEMA public TO sql_agent_reader;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO sql_agent_reader;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+  GRANT SELECT ON TABLES TO sql_agent_reader;`
 
 function toBase64(buffer) {
   const bytes = new Uint8Array(buffer)
@@ -23,8 +30,17 @@ export default function ConnectDbModal({ open, onClose, onConnected, currentDb }
   const [file, setFile] = useState(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [copied, setCopied] = useState(false)
 
   if (!open) return null
+
+  async function copySql() {
+    try {
+      await navigator.clipboard.writeText(READONLY_SQL)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1800)
+    } catch {}
+  }
 
   async function handleConnectUrl(e) {
     e.preventDefault()
@@ -107,7 +123,7 @@ export default function ConnectDbModal({ open, onClose, onConnected, currentDb }
               <span>SQLAlchemy Read-Only Connection URL</span>
               <input
                 type="text"
-                placeholder="postgresql+psycopg2://reader:pass@host:5432/db"
+                placeholder="postgresql+psycopg2://sql_agent_reader:pass@host:5432/postgres?sslmode=require"
                 value={dbUrl}
                 onChange={e => setDbUrl(e.target.value)}
                 required
@@ -117,6 +133,30 @@ export default function ConnectDbModal({ open, onClose, onConnected, currentDb }
               <ShieldCheck size={15} />
               <span>Queries run inside read-only transactions (<code>SET TRANSACTION READ ONLY</code> / <code>mode=ro</code>) and are parsed with <code>sqlglot</code> to allow only <code>SELECT</code>.</span>
             </div>
+
+            <details className="db-guide" open>
+              <summary>
+                <span>How to create a read-only user in Supabase or Neon</span>
+                <ChevronDown size={14} />
+              </summary>
+              <div className="db-guide-body">
+                <ol>
+                  <li>Open the <strong>SQL Editor</strong> in your Supabase or Neon dashboard and run:</li>
+                </ol>
+                <div className="guide-code-wrap">
+                  <button type="button" className="copy-sql-btn" onClick={copySql} aria-label="Copy SQL">
+                    {copied ? <Check size={13} /> : <Copy size={13} />}
+                    <span>{copied ? 'Copied' : 'Copy'}</span>
+                  </button>
+                  <pre className="guide-code">{READONLY_SQL}</pre>
+                </div>
+                <ol start={2}>
+                  <li>Click the <strong>Supabase</strong> or <strong>Neon</strong> template above, replace <code>PASSWORD</code> and host details, and keep <code>?sslmode=require</code>.</li>
+                  <li>URL-encode special characters in your password (e.g. <code>@</code> → <code>%40</code>).</li>
+                </ol>
+              </div>
+            </details>
+
             {error && <div role="alert" className="auth-error">{error}</div>}
             <div className="modal-actions">
               <button type="button" className="btn-secondary" disabled={busy} onClick={handleResetDemo}><RotateCcw size={14} /> Use Demo DB</button>

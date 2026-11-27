@@ -118,3 +118,14 @@ header button.read-only:hover {border-color:var(--accent);color:var(--fg)}
 .modal-actions .auth-submit {margin-top:0}
 .btn-secondary {display:inline-flex;align-items:center;gap:6px;padding:10px 14px;border:1px solid var(--border);border-radius:9px;background:var(--bg);font-size:13px;font-weight:500}
 .btn-secondary:hover {border-color:var(--accent)}
+
+.modal-card {max-height:90dvh;overflow:auto}
+.db-guide {border:1px solid var(--border);border-radius:10px;background:var(--bg);padding:10px 12px;font-size:12px}
+.db-guide summary {display:flex;align-items:center;justify-content:space-between;cursor:pointer;font-weight:600;color:var(--fg)}
+.db-guide-body {margin-top:10px;display:flex;flex-direction:column;gap:8px;color:var(--muted);line-height:1.45}
+.db-guide-body ol {margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.db-guide-body code {font-family:monospace;font-size:11px;background:var(--rail);padding:1px 4px;border-radius:4px;color:var(--fg)}
+.guide-code-wrap {position:relative}
+.guide-code {margin:0;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--fg);font-size:11px;line-height:1.45;overflow-x:auto}
+.copy-sql-btn {position:absolute;top:6px;right:6px;display:inline-flex;align-items:center;gap:4px;padding:3px 7px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--fg);font-size:11px}
+.copy-sql-btn:hover {border-color:var(--accent);color:var(--accent)}
