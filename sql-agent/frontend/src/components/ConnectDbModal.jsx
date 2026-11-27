@@ -131,12 +131,12 @@ export default function ConnectDbModal({ open, onClose, onConnected, currentDb }
             </label>
             <div className="ro-note">
               <ShieldCheck size={15} />
-              <span>Queries run inside read-only transactions (<code>SET TRANSACTION READ ONLY</code> / <code>mode=ro</code>) and are parsed with <code>sqlglot</code> to allow only <code>SELECT</code>.</span>
+              <span><strong>Automatic read-only:</strong> Just paste any database URL — the backend locks the session to read-only (<code>READ ONLY</code> transaction + <code>mode=ro</code>) and <code>sqlglot</code> blocks all non-<code>SELECT</code> queries.</span>
             </div>
 
-            <details className="db-guide" open>
+            <details className="db-guide">
               <summary>
-                <span>How to create a read-only user in Supabase or Neon</span>
+                <span>Optional: Create a dedicated read-only user in Supabase or Neon</span>
                 <ChevronDown size={14} />
               </summary>
               <div className="db-guide-body">

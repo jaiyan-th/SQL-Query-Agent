@@ -66,8 +66,10 @@ def _verify_read_connection(target_engine):
     with target_engine.connect() as conn:
         dialect = conn.dialect.name
         if dialect == "postgresql":
+            conn.exec_driver_sql("SET SESSION CHARACTERISTICS AS TRANSACTION READ ONLY")
             conn.exec_driver_sql("SET TRANSACTION READ ONLY")
         elif dialect == "mysql":
+            conn.exec_driver_sql("SET SESSION TRANSACTION READ ONLY")
             conn.exec_driver_sql("START TRANSACTION READ ONLY")
         conn.exec_driver_sql("SELECT 1").scalar_one()
         conn.rollback()
@@ -119,10 +121,12 @@ def read_connection():
             deadline = monotonic() + TIMEOUT_SECONDS
             driver_conn.set_progress_handler(lambda: int(monotonic() >= deadline), 1000)
         elif dialect == "postgresql":
+            conn.exec_driver_sql("SET SESSION CHARACTERISTICS AS TRANSACTION READ ONLY")
             conn.exec_driver_sql("SET TRANSACTION READ ONLY")
             conn.exec_driver_sql(f"SET LOCAL statement_timeout = {TIMEOUT_SECONDS * 1000}")
         else:
             conn.exec_driver_sql(f"SET SESSION MAX_EXECUTION_TIME={TIMEOUT_SECONDS * 1000}")
+            conn.exec_driver_sql("SET SESSION TRANSACTION READ ONLY")
             conn.exec_driver_sql("START TRANSACTION READ ONLY")
         try:
             yield conn
