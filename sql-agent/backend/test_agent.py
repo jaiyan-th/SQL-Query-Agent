@@ -50,7 +50,12 @@ class AgentTests(unittest.TestCase):
         cls.auth_db.stop()
         cls.replace.stop()
         cls.engine.dispose()
-        cls.temp.cleanup()
+        import gc
+        gc.collect()
+        try:
+            cls.temp.cleanup()
+        except Exception:
+            pass
 
     def setUp(self):
         agent.reset("suite")

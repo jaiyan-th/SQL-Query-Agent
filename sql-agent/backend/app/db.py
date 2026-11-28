@@ -43,8 +43,12 @@ def make_engine(address):
     return create_engine(url, pool_pre_ping=True, connect_args={"connect_timeout": TIMEOUT_SECONDS})
 
 
-engine = make_engine(DB_URL)
-_current_url = DB_URL
+try:
+    engine = make_engine(DB_URL)
+    _current_url = DB_URL
+except Exception:
+    engine = None
+    _current_url = ""
 
 
 def _describe_url(address: str) -> dict:
@@ -61,9 +65,14 @@ def _describe_url(address: str) -> dict:
 
 def current_db_info() -> dict:
     with _engine_lock:
-        if engine is None or not _current_url:
+        if engine is None:
             return {"connected": False, "dialect": "", "label": "Disconnected"}
-        return {**_describe_url(_current_url), "connected": True}
+        if _current_url:
+            desc = _describe_url(_current_url)
+        else:
+            dialect = getattr(engine.dialect, "name", "sqlite")
+            desc = {"dialect": dialect, "label": getattr(engine.url, "database", "") or "connected"}
+        return {**desc, "connected": True}
 
 
 def disconnect_engine() -> dict:
