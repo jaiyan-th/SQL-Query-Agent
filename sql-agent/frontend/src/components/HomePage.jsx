@@ -7,20 +7,36 @@ import {
   Database,
   BarChart3,
   Sparkles,
-  Terminal,
-  Layers,
+  Users,
+  CheckCircle2,
+  TrendingUp,
 } from 'lucide-react'
 import { Mark } from './Sidebar'
 
+const HERO_IMAGE =
+  'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1600&q=80'
+
 export default function HomePage({ onOpenAuth }) {
   return (
-    <div className="home-layout">
-      {/* Top Navbar */}
-      <header className="home-nav">
+    <div className="home-screen-wrap">
+      {/* Full-width Navigation */}
+      <header className="home-full-nav">
         <div className="home-brand">
           <Mark />
           <span className="home-brand-text">SQL Query Agent</span>
         </div>
+
+        <nav className="home-nav-center">
+          <span className="nav-tag">
+            <Database size={13} /> Neon PostgreSQL
+          </span>
+          <span className="nav-tag">
+            <Zap size={13} /> Groq LPU
+          </span>
+          <span className="nav-tag security">
+            <LockKeyhole size={12} /> Read-Only
+          </span>
+        </nav>
 
         <div className="home-nav-actions" role="tablist">
           <button
@@ -45,147 +61,144 @@ export default function HomePage({ onOpenAuth }) {
         </div>
       </header>
 
-      {/* Hero Section */}
-      <main className="home-hero-clean">
-        <div className="hero-content">
-          <div className="hero-pill">
-            <Sparkles size={13} />
-            <span>AI Database Agent</span>
-            <span className="pill-dot">·</span>
-            <span>Neon PostgreSQL & Groq</span>
-          </div>
-
-          <h1 className="hero-heading">
-            Talk to your database.<br />
-            Inspect the <em>SQL & charts</em>.
-          </h1>
-
-          <p className="hero-lead">
-            Ask plain English questions, explore auto-generated charts, and verify every read-only query.
-            No manual SQL syntax, zero write risks.
-          </p>
-
-          <div className="hero-cta-group">
-            <button
-              type="button"
-              className="cta-primary"
-              onClick={() => onOpenAuth('signup')}
-            >
-              <span>Get started free</span>
-              <ArrowRight size={16} />
-            </button>
-            <button
-              type="button"
-              className="cta-secondary"
-              onClick={() => onOpenAuth('login')}
-            >
-              <span>Sign in to Workspace</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Product Visual Mockup */}
-        <div className="hero-preview-wrap">
-          <div className="mockup-window">
-            <div className="mockup-header">
-              <div className="mockup-dots">
-                <span className="dot red"></span>
-                <span className="dot yellow"></span>
-                <span className="dot green"></span>
-              </div>
-              <div className="mockup-address">
-                <LockKeyhole size={11} />
-                <span>sql-query-agent / workspace</span>
-              </div>
-              <div className="mockup-tag">
-                <ShieldCheck size={12} />
-                <span>Read-only active</span>
-              </div>
+      {/* Full-Screen Immersive Hero */}
+      <section className="home-full-hero">
+        <div className="hero-grid-full">
+          {/* Left Column: Clear Value Proposition */}
+          <div className="hero-text-pane">
+            <div className="hero-pill-tag">
+              <Sparkles size={14} />
+              <span>Enterprise Business Intelligence</span>
             </div>
 
-            <div className="mockup-body">
-              {/* User Prompt */}
-              <div className="mockup-user-bubble">
-                <span>Revenue by month this year</span>
+            <h1 className="hero-main-title">
+              Instant business insights from your database in <em>plain English</em>.
+            </h1>
+
+            <p className="hero-main-desc">
+              Empower your product, analytics, and leadership teams to query live PostgreSQL and SQLite data
+              without writing manual queries. Every answer includes verifiable source SQL, interactive charts, and guaranteed read-only safety.
+            </p>
+
+            <div className="hero-btn-row">
+              <button
+                type="button"
+                className="btn-hero-primary"
+                onClick={() => onOpenAuth('signup')}
+              >
+                <span>Launch Workspace Free</span>
+                <ArrowRight size={16} />
+              </button>
+              <button
+                type="button"
+                className="btn-hero-outline"
+                onClick={() => onOpenAuth('login')}
+              >
+                <span>Sign in to Account</span>
+              </button>
+            </div>
+
+            <div className="hero-stats-strip">
+              <div className="stat-unit">
+                <strong>&lt; 500ms</strong>
+                <span>SQL Generation</span>
+              </div>
+              <div className="stat-divider"></div>
+              <div className="stat-unit">
+                <strong>100%</strong>
+                <span>Read-Only Protected</span>
+              </div>
+              <div className="stat-divider"></div>
+              <div className="stat-unit">
+                <strong>PostgreSQL</strong>
+                <span>Managed on Neon</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Business Meetup & Team Collaboration Visual */}
+          <div className="hero-visual-pane">
+            <div className="business-visual-card">
+              <img
+                src={HERO_IMAGE}
+                alt="Business analytics team collaborating over laptops"
+                className="business-photo"
+                loading="eager"
+              />
+              <div className="visual-overlay-gradient"></div>
+
+              {/* Floating Real-Time Analytics Badge */}
+              <div className="floating-metric-badge top-left">
+                <div className="badge-icon green">
+                  <TrendingUp size={16} />
+                </div>
+                <div>
+                  <small>Quarterly Revenue Query</small>
+                  <strong>₹28,45,200 · 360 Orders</strong>
+                </div>
               </div>
 
-              {/* Agent Answer */}
-              <div className="mockup-agent-card">
-                <div className="mockup-agent-head">
-                  <Mark />
-                  <strong>Query Agent</strong>
-                  <span className="mockup-latency">
-                    <Zap size={11} /> Groq 380ms
-                  </span>
+              {/* Floating Live Agent Badge */}
+              <div className="floating-metric-badge bottom-right">
+                <div className="badge-icon dark">
+                  <Zap size={16} />
                 </div>
-
-                <p className="mockup-answer-text">
-                  Total revenue for 2026 reached <strong>₹28,45,200</strong> across 360 completed orders, peaking in October.
-                </p>
-
-                {/* Visual Chart Mockup */}
-                <div className="mockup-chart-card">
-                  <div className="chart-card-head">
-                    <div className="chart-title">
-                      <BarChart3 size={13} />
-                      <span>Monthly Revenue Trend (INR)</span>
-                    </div>
-                    <div className="chart-actions">
-                      <span className="chart-chip active">Chart</span>
-                      <span className="chart-chip">Table</span>
-                    </div>
-                  </div>
-
-                  <div className="chart-bars-wrap">
-                    <div className="chart-bar-col"><div className="chart-bar-fill" style={{ height: '42%' }}></div><span>Jan</span></div>
-                    <div className="chart-bar-col"><div className="chart-bar-fill" style={{ height: '55%' }}></div><span>Feb</span></div>
-                    <div className="chart-bar-col"><div className="chart-bar-fill" style={{ height: '48%' }}></div><span>Mar</span></div>
-                    <div className="chart-bar-col"><div className="chart-bar-fill" style={{ height: '68%' }}></div><span>Apr</span></div>
-                    <div className="chart-bar-col"><div className="chart-bar-fill" style={{ height: '74%' }}></div><span>May</span></div>
-                    <div className="chart-bar-col"><div className="chart-bar-fill" style={{ height: '62%' }}></div><span>Jun</span></div>
-                    <div className="chart-bar-col"><div className="chart-bar-fill" style={{ height: '81%' }}></div><span>Jul</span></div>
-                    <div className="chart-bar-col"><div className="chart-bar-fill" style={{ height: '94%' }}></div><span>Aug</span></div>
-                    <div className="chart-bar-col"><div className="chart-bar-fill" style={{ height: '88%' }}></div><span>Sep</span></div>
-                    <div className="chart-bar-col highlight"><div className="chart-bar-fill" style={{ height: '100%' }}></div><span>Oct</span></div>
-                    <div className="chart-bar-col"><div className="chart-bar-fill" style={{ height: '76%' }}></div><span>Nov</span></div>
-                  </div>
-                </div>
-
-                {/* SQL Chip */}
-                <div className="mockup-sql-chip">
-                  <Terminal size={12} />
-                  <code>SELECT strftime('%Y-%m', order_date) AS month, SUM(total_inr) AS revenue FROM orders GROUP BY month;</code>
+                <div>
+                  <small>Groq Engine · Read-Only</small>
+                  <code>SELECT strftime('%Y-%m', date)...</code>
                 </div>
               </div>
             </div>
           </div>
         </div>
+      </section>
 
-        {/* 3 Core Value Pillars */}
-        <section className="home-pillars">
-          <div className="pillar-card">
-            <div className="pillar-icon"><Zap size={18} /></div>
-            <h3>Sub-Second SQL Inference</h3>
-            <p>Converts complex multi-table analytics questions into correct SQL in milliseconds using Groq's Llama 3.3 engine.</p>
+      {/* Full-width Features Section */}
+      <section className="home-wide-section">
+        <div className="section-head-full">
+          <span className="section-kicker">Core Capabilities</span>
+          <h2>Everything your business needs to explore data safely</h2>
+        </div>
+
+        <div className="features-quad-grid">
+          <div className="quad-card">
+            <div className="quad-icon"><Users size={20} /></div>
+            <h3>Self-Serve Team Analytics</h3>
+            <p>Anyone on your team can ask questions in conversational English and receive accurate tabular and plotted results.</p>
           </div>
 
-          <div className="pillar-card">
-            <div className="pillar-icon"><ShieldCheck size={18} /></div>
-            <h3>100% Read-Only Safety</h3>
-            <p>AST analysis via sqlglot prevents updates, deletes, and DDL commands. Enforced with read-only database transactions.</p>
+          <div className="quad-card">
+            <div className="quad-icon"><ShieldCheck size={20} /></div>
+            <h3>Guaranteed Read-Only Safety</h3>
+            <p>AST analysis via sqlglot blocks all write, alter, or drop statements. Transactions are restricted to session-level read-only mode.</p>
           </div>
 
-          <div className="pillar-card">
-            <div className="pillar-icon"><Database size={18} /></div>
-            <h3>Backed by Neon Postgres</h3>
-            <p>Connected to serverless Neon PostgreSQL for pooled application queries, persistent chat history, and secure sessions.</p>
+          <div className="quad-card">
+            <div className="quad-icon"><BarChart3 size={20} /></div>
+            <h3>Automated Visualizations</h3>
+            <p>Chronological date trends automatically format as line series, while categorical distributions render as bar charts.</p>
           </div>
-        </section>
-      </main>
 
-      {/* Footer */}
-      <footer className="home-footer-clean">
-        <p>SQL Query Agent · Natural Language Analytics on Neon PostgreSQL · Guaranteed Read-Only</p>
+          <div className="quad-card">
+            <div className="quad-icon"><Database size={20} /></div>
+            <h3>Serverless Neon PostgreSQL</h3>
+            <p>Production database connection pooling, user credential storage, and seamless disconnect/connect options built in.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Full-width Footer */}
+      <footer className="home-wide-footer">
+        <div className="footer-content-full">
+          <div className="footer-left">
+            <Mark />
+            <strong>SQL Query Agent</strong>
+            <span>· Natural Language Business Analytics</span>
+          </div>
+          <div className="footer-right">
+            <span>Powered by Groq LPUs & Neon PostgreSQL</span>
+          </div>
+        </div>
       </footer>
     </div>
   )
