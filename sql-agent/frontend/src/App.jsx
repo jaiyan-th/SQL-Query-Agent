@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Menu, SquareTerminal, LockKeyhole, X } from 'lucide-react'
 import { ask, getMe, getSchema, getToken, reset, setToken } from './api'
-import AuthPage from './components/AuthPage'
+import HomePage from './components/HomePage'
 import ConnectDbModal from './components/ConnectDbModal'
 import Sidebar from './components/Sidebar'
 import Chat from './components/Chat'
@@ -183,7 +183,7 @@ export default function App() {
   }
 
   if (!user) {
-    return <div className="shell light"><AuthPage onAuth={handleAuth} /></div>
+    return <div className="shell light"><HomePage onAuth={handleAuth} /></div>
   }
 
   return <div className="shell light">
