@@ -3,13 +3,10 @@ import {
   LockKeyhole,
   ArrowRight,
   ShieldCheck,
-  Zap,
   Database,
   BarChart3,
   Sparkles,
   Users,
-  CheckCircle2,
-  TrendingUp,
 } from 'lucide-react'
 import { Mark } from './Sidebar'
 
@@ -123,28 +120,6 @@ export default function HomePage({ onOpenAuth }) {
                 loading="eager"
               />
               <div className="visual-overlay-gradient"></div>
-
-              {/* Floating Real-Time Analytics Badge */}
-              <div className="floating-metric-badge top-left">
-                <div className="badge-icon green">
-                  <TrendingUp size={16} />
-                </div>
-                <div>
-                  <small>Quarterly Revenue Query</small>
-                  <strong>₹28,45,200 · 360 Orders</strong>
-                </div>
-              </div>
-
-              {/* Floating Live Agent Badge */}
-              <div className="floating-metric-badge bottom-right">
-                <div className="badge-icon dark">
-                  <Sparkles size={16} />
-                </div>
-                <div>
-                  <small>AI SQL Engine · Read-Only</small>
-                  <code>SELECT strftime('%Y-%m', date)...</code>
-                </div>
-              </div>
             </div>
           </div>
         </div>
