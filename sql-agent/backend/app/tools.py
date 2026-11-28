@@ -23,11 +23,18 @@ TOOLS = [
 ]
 
 
+SYSTEM_TABLES = {"users"}
+
+
+def _allowed_tables(inspector):
+    return [name for name in sorted(inspector.get_table_names()) if name.lower() not in SYSTEM_TABLES]
+
+
 def schema():
     with db.read_connection() as conn:
         inspector = inspect(conn)
         return [{"name": name, "columns": [{"name": c["name"], "type": str(c["type"])}
-                for c in inspector.get_columns(name)]} for name in sorted(inspector.get_table_names())]
+                for c in inspector.get_columns(name)]} for name in _allowed_tables(inspector)]
 
 
 def json_value(v):
@@ -50,11 +57,12 @@ def rows(result, cap):
 def dispatch(name, args):
     with db.read_connection() as conn:
         inspector = inspect(conn)
+        allowed = _allowed_tables(inspector)
         if name == "list_tables" and not args:
-            return {"tables": sorted(inspector.get_table_names())}
+            return {"tables": allowed}
         if name == "describe_table" and set(args) == {"table_name"}:
             target = args["table_name"]
-            if target not in inspector.get_table_names():
+            if target not in allowed:
                 raise ValueError("Unknown table. Check list_tables.")
             table = Table(target, MetaData(), autoload_with=conn, resolve_fks=False)
             return {"name": target, "columns": [{"name": c.name, "type": str(c.type)} for c in table.columns],

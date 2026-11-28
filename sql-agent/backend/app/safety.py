@@ -31,6 +31,8 @@ def validate(query, dialect):
             "set", "propertyeq", "sessionparameter", "parameter", "hint", "use", "copy",
         }:
             raise ValueError("SQL contains a disallowed operation.")
+        if isinstance(node, exp.Table) and node.name.lower() in {"users"}:
+            raise ValueError("Access to system authentication tables is disallowed.")
         if isinstance(node, exp.Func):
             fn = node.name if isinstance(node, exp.Anonymous) else node.sql_name()
             if fn.upper() not in FUNCTIONS:

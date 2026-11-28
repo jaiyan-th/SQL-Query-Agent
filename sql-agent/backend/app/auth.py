@@ -5,12 +5,25 @@ import json
 import os
 import re
 import secrets
-import sqlite3
 import tempfile
 import time
 from pathlib import Path
 
 from fastapi import Header, HTTPException
+from sqlalchemy import (
+    BigInteger,
+    Column,
+    Integer,
+    MetaData,
+    String,
+    Table,
+    create_engine,
+    insert,
+    select,
+)
+from sqlalchemy.engine import make_url
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.pool import NullPool
 
 from . import config
 
@@ -18,41 +31,47 @@ EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 TOKEN_TTL_SECONDS = 60 * 60 * 24 * 7  # 7 days
 _SECRET = (os.getenv("AUTH_SECRET") or secrets.token_urlsafe(32)).encode()
 
+DEFAULT_AUTH_DB_PATH = Path(tempfile.gettempdir()) / "sql_agent_auth.sqlite"
+AUTH_DB_PATH = DEFAULT_AUTH_DB_PATH
 
-def _auth_db_path() -> Path:
-    configured = os.getenv("AUTH_DB_PATH")
-    if configured:
-        return Path(configured)
-    candidate = config.BASE / "auth.sqlite"
-    try:
-        candidate.parent.mkdir(parents=True, exist_ok=True)
-        probe = candidate.parent / ".write_probe"
-        probe.write_text("ok", encoding="utf-8")
-        probe.unlink(missing_ok=True)
-        return candidate
-    except OSError:
-        return Path(tempfile.gettempdir()) / "sql_agent_auth.sqlite"
+_auth_engine = None
+_metadata = MetaData()
 
-
-AUTH_DB_PATH = _auth_db_path()
+users_table = Table(
+    "users",
+    _metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("name", String(120), nullable=False),
+    Column("email", String(254), nullable=False, unique=True),
+    Column("password_hash", String(256), nullable=False),
+    Column("created_at", BigInteger, nullable=False),
+)
 
 
-def _connect() -> sqlite3.Connection:
-    conn = sqlite3.connect(AUTH_DB_PATH, check_same_thread=False)
-    conn.row_factory = sqlite3.Row
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            email TEXT NOT NULL UNIQUE,
-            password_hash TEXT NOT NULL,
-            created_at INTEGER NOT NULL
-        )
-        """
-    )
-    conn.commit()
-    return conn
+def _get_auth_engine():
+    global _auth_engine
+    target_url = os.getenv("AUTH_DB_URL")
+    if not target_url:
+        # If test suite patched AUTH_DB_PATH, honor SQLite test database
+        if str(AUTH_DB_PATH) != str(DEFAULT_AUTH_DB_PATH):
+            target_url = f"sqlite:///{Path(AUTH_DB_PATH).as_posix()}"
+        elif config.DB_URL and config.DB_URL.startswith(("postgresql://", "postgres://", "postgresql+psycopg2://")):
+            target_url = config.DB_URL
+        else:
+            target_url = f"sqlite:///{Path(AUTH_DB_PATH).as_posix()}"
+
+    url = make_url(target_url)
+    if url.drivername in {"postgresql", "postgres"}:
+        url = url.set(drivername="postgresql+psycopg2")
+        engine = create_engine(url, pool_pre_ping=True)
+    elif url.get_backend_name() == "sqlite":
+        engine = create_engine(url, poolclass=NullPool)
+    else:
+        engine = create_engine(url, pool_pre_ping=True)
+
+    with engine.begin() as conn:
+        users_table.create(conn, checkfirst=True)
+    return engine
 
 
 def _hash_password(password: str, salt: bytes | None = None) -> str:
@@ -109,16 +128,20 @@ def signup(name: str, email: str, password: str) -> dict:
     if len(password) < 6:
         raise HTTPException(422, "Password must be at least 6 characters.")
     pw_hash = _hash_password(password)
-    with _connect() as conn:
-        try:
-            cur = conn.execute(
-                "INSERT INTO users (name, email, password_hash, created_at) VALUES (?, ?, ?, ?)",
-                (clean_name, clean_email, pw_hash, int(time.time())),
+    engine = _get_auth_engine()
+    try:
+        with engine.begin() as conn:
+            stmt = insert(users_table).values(
+                name=clean_name,
+                email=clean_email,
+                password_hash=pw_hash,
+                created_at=int(time.time()),
             )
-            conn.commit()
-            user = {"id": cur.lastrowid, "name": clean_name, "email": clean_email}
-        except sqlite3.IntegrityError as exc:
-            raise HTTPException(409, "An account with this email already exists.") from exc
+            res = conn.execute(stmt)
+            user_id = res.inserted_primary_key[0]
+            user = {"id": user_id, "name": clean_name, "email": clean_email}
+    except IntegrityError as exc:
+        raise HTTPException(409, "An account with this email already exists.") from exc
     return {"token": _sign_token(user), "user": user}
 
 
@@ -126,8 +149,15 @@ def login(email: str, password: str) -> dict:
     clean_email = email.strip().lower()
     if not EMAIL_RE.match(clean_email) or not password:
         raise HTTPException(422, "Enter your email and password.")
-    with _connect() as conn:
-        row = conn.execute("SELECT id, name, email, password_hash FROM users WHERE email = ?", (clean_email,)).fetchone()
+    engine = _get_auth_engine()
+    with engine.connect() as conn:
+        stmt = select(
+            users_table.c.id,
+            users_table.c.name,
+            users_table.c.email,
+            users_table.c.password_hash,
+        ).where(users_table.c.email == clean_email)
+        row = conn.execute(stmt).mappings().first()
     if not row or not _verify_password(password, row["password_hash"]):
         raise HTTPException(401, "Invalid email or password.")
     user = {"id": row["id"], "name": row["name"], "email": row["email"]}
