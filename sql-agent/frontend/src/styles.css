@@ -129,3 +129,16 @@ header button.read-only:hover {border-color:var(--accent);color:var(--fg)}
 .guide-code {margin:0;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--fg);font-size:11px;line-height:1.45;overflow-x:auto}
 .copy-sql-btn {position:absolute;top:6px;right:6px;display:inline-flex;align-items:center;gap:4px;padding:3px 7px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--fg);font-size:11px}
 .copy-sql-btn:hover {border-color:var(--accent);color:var(--accent)}
+
+.history-list {max-height:190px;overflow:auto;margin-bottom:18px;display:flex;flex-direction:column;gap:2px}
+.history-empty {font-size:12px;color:var(--muted);padding:6px 8px;margin:0}
+.history-row {display:flex;align-items:center;gap:4px;border-radius:7px;padding:2px 4px}
+.history-row:hover {background:var(--panel)}
+.history-row.active {background:var(--tint);color:var(--accent)}
+.history-select {flex:1;min-width:0;display:flex;align-items:center;gap:8px;padding:7px 6px;text-align:left;font-size:13px}
+.history-select svg {flex:none;color:var(--muted)}
+.history-row.active .history-select svg {color:var(--accent)}
+.history-select span {overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.history-del {opacity:0;padding:5px;border-radius:5px;color:var(--muted);flex:none}
+.history-row:hover .history-del,.history-row:focus-within .history-del {opacity:1}
+.history-del:hover {color:#8c2d19;background:var(--bg)}

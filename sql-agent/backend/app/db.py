@@ -36,7 +36,9 @@ def make_engine(address):
         return create_engine("sqlite://", creator=connect, poolclass=NullPool)
     if dialect not in {"postgresql", "mysql"}:
         raise ValueError("DB_URL must use SQLite, PostgreSQL, or MySQL.")
-    if url.drivername == "mysql":
+    if url.drivername in {"postgresql", "postgres"}:
+        url = url.set(drivername="postgresql+psycopg2")
+    elif url.drivername == "mysql":
         url = url.set(drivername="mysql+pymysql")
     return create_engine(url, pool_pre_ping=True, connect_args={"connect_timeout": TIMEOUT_SECONDS})
 
@@ -59,7 +61,20 @@ def _describe_url(address: str) -> dict:
 
 def current_db_info() -> dict:
     with _engine_lock:
-        return _describe_url(_current_url)
+        if engine is None or not _current_url:
+            return {"connected": False, "dialect": "", "label": "Disconnected"}
+        return {**_describe_url(_current_url), "connected": True}
+
+
+def disconnect_engine() -> dict:
+    global engine, _current_url
+    with _engine_lock:
+        previous = engine
+        engine = None
+        _current_url = ""
+    if previous is not None:
+        previous.dispose()
+    return {"connected": False, "dialect": "", "label": "Disconnected"}
 
 
 def _verify_read_connection(target_engine):
@@ -114,6 +129,8 @@ def save_uploaded_sqlite(filename: str, data_base64: str) -> dict:
 def read_connection():
     with _engine_lock:
         active = engine
+    if active is None:
+        raise ValueError("No database connected. Connect a database first.")
     with active.connect() as conn:
         dialect = conn.dialect.name
         if dialect == "sqlite":

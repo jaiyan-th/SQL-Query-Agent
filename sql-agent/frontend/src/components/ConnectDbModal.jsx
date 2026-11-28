@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { Database, Upload, Link2, RotateCcw, X, Loader2, ShieldCheck, Copy, Check, ChevronDown } from 'lucide-react'
-import { connectDb, resetDb, uploadDb } from '../api'
+import { Database, Upload, Link2, RotateCcw, Unplug, X, Loader2, ShieldCheck, Copy, Check, ChevronDown } from 'lucide-react'
+import { connectDb, disconnectDb, resetDb, uploadDb } from '../api'
 
 const PRESETS = [
   { label: 'Supabase', url: 'postgresql+psycopg2://sql_agent_reader:PASSWORD@db.PROJECT_REF.supabase.co:5432/postgres?sslmode=require' },
@@ -87,6 +87,20 @@ export default function ConnectDbModal({ open, onClose, onConnected, currentDb }
     }
   }
 
+  async function handleDisconnect() {
+    if (busy) return
+    setBusy(true); setError('')
+    try {
+      const res = await disconnectDb()
+      onConnected(res)
+      onClose()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="connect-db-title">
       <div className="modal-card">
@@ -99,7 +113,11 @@ export default function ConnectDbModal({ open, onClose, onConnected, currentDb }
         </div>
 
         <p className="modal-sub">
-          Active: <strong>{currentDb?.dialect || 'sqlite'}</strong> · <code>{currentDb?.label || 'retail.sqlite'}</code>
+          Active: {currentDb?.connected === false ? (
+            <strong>Disconnected</strong>
+          ) : (
+            <><strong>{currentDb?.dialect || 'sqlite'}</strong> · <code>{currentDb?.label || 'retail.sqlite'}</code></>
+          )}
         </p>
 
         <div className="auth-tabs" role="tablist">
@@ -159,7 +177,10 @@ export default function ConnectDbModal({ open, onClose, onConnected, currentDb }
 
             {error && <div role="alert" className="auth-error">{error}</div>}
             <div className="modal-actions">
-              <button type="button" className="btn-secondary" disabled={busy} onClick={handleResetDemo}><RotateCcw size={14} /> Use Demo DB</button>
+              {currentDb?.connected !== false && (
+                <button type="button" className="btn-secondary" disabled={busy} onClick={handleDisconnect}><Unplug size={14} /> Disconnect</button>
+              )}
+              <button type="button" className="btn-secondary" disabled={busy} onClick={handleResetDemo}><RotateCcw size={14} /> Use Default DB</button>
               <button type="submit" className="auth-submit" disabled={busy || !dbUrl.trim()}>
                 {busy && <Loader2 size={15} className="spin" />} Connect Read-Only
               </button>
@@ -182,7 +203,10 @@ export default function ConnectDbModal({ open, onClose, onConnected, currentDb }
             </div>
             {error && <div role="alert" className="auth-error">{error}</div>}
             <div className="modal-actions">
-              <button type="button" className="btn-secondary" disabled={busy} onClick={handleResetDemo}><RotateCcw size={14} /> Use Demo DB</button>
+              {currentDb?.connected !== false && (
+                <button type="button" className="btn-secondary" disabled={busy} onClick={handleDisconnect}><Unplug size={14} /> Disconnect</button>
+              )}
+              <button type="button" className="btn-secondary" disabled={busy} onClick={handleResetDemo}><RotateCcw size={14} /> Use Default DB</button>
               <button type="submit" className="auth-submit" disabled={busy || !file}>
                 {busy && <Loader2 size={15} className="spin" />} Upload & Connect
               </button>

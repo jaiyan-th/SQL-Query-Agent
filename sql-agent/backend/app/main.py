@@ -81,7 +81,7 @@ def ready():
     try:
         with db.read_connection() as conn:
             conn.exec_driver_sql("SELECT 1").scalar_one()
-    except SQLAlchemyError:
+    except (SQLAlchemyError, ValueError):
         raise HTTPException(503, "Database unavailable.")
     if not config.GROQ_API_KEY:
         raise HTTPException(503, "Model provider is not configured.")
@@ -90,8 +90,11 @@ def ready():
 
 @app.get("/api/schema")
 def get_schema(_user: dict = Depends(auth.require_user)):
+    info = db.current_db_info()
+    if not info.get("connected"):
+        return {"tables": [], "db": info}
     try:
-        return {"tables": tools.schema(), "db": db.current_db_info()}
+        return {"tables": tools.schema(), "db": info}
     except SQLAlchemyError:
         raise HTTPException(503, "Database unavailable. Check DB_URL or run the SQLite seed script.")
 
@@ -127,9 +130,15 @@ def upload_db(request: DbUploadRequest, _user: dict = Depends(auth.require_user)
 def reset_db(_user: dict = Depends(auth.require_user)):
     try:
         info = db.switch_engine(config.DB_URL)
-        return {"status": "connected", "db": info, "tables": tools.schema()}
+        return {"status": "connected", "db": {**info, "connected": True}, "tables": tools.schema()}
     except Exception as exc:
         raise HTTPException(500, f"Could not restore default database: {exc}")
+
+
+@app.post("/api/db/disconnect")
+def disconnect_db(_user: dict = Depends(auth.require_user)):
+    info = db.disconnect_engine()
+    return {"status": "disconnected", "db": info, "tables": []}
 
 
 @app.post("/api/chat")
@@ -143,6 +152,8 @@ def chat(request: Question, _user: dict = Depends(auth.require_user)):
         return agent.chat(request.session_id, message)
     except agent.AgentError as exc:
         raise HTTPException(exc.code, str(exc))
+    except ValueError as exc:
+        raise HTTPException(422, str(exc))
     except SQLAlchemyError:
         raise HTTPException(503, "Database unavailable. Check DB_URL or run the SQLite seed script.")
     finally:

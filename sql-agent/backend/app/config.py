@@ -5,8 +5,10 @@ from dotenv import load_dotenv
 
 BASE = Path(__file__).resolve().parents[1]
 load_dotenv(BASE / ".env")
+load_dotenv(BASE.parents[1] / ".env.local")
 
-DB_URL = os.getenv("DB_URL", "sqlite:///retail.sqlite")
+DB_URL = os.getenv("DB_URL") or os.getenv("DATABASE_URL") or "sqlite:///retail.sqlite"
+DATABASE_URL_UNPOOLED = os.getenv("DATABASE_URL_UNPOOLED", "")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 APP_ENV = os.getenv("APP_ENV", "development").lower()
