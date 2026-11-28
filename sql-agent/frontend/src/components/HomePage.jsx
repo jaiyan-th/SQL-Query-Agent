@@ -1,225 +1,191 @@
-import React, { useState } from 'react'
+import React from 'react'
 import {
   LockKeyhole,
   ArrowRight,
-  Loader2,
   ShieldCheck,
   Zap,
   Database,
   BarChart3,
   Sparkles,
-  CheckCircle2,
+  Terminal,
+  Layers,
 } from 'lucide-react'
-import { login, signup } from '../api'
 import { Mark } from './Sidebar'
 
-const SAMPLE_QUESTIONS = [
-  'How many customers do we have?',
-  'Top 5 customers by total spend.',
-  'Revenue by month this year.',
-  'Which product category sold the most units?',
-]
-
-export default function HomePage({ onAuth }) {
-  const [mode, setMode] = useState('login')
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
-
-  async function submit(e) {
-    e.preventDefault()
-    if (busy) return
-    setError('')
-    setBusy(true)
-    try {
-      const result = mode === 'signup'
-        ? await signup(name, email, password)
-        : await login(email, password)
-      onAuth(result)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  function switchMode(next) {
-    setMode(next)
-    setError('')
-  }
-
+export default function HomePage({ onOpenAuth }) {
   return (
     <div className="home-layout">
-      {/* Top Navigation */}
+      {/* Top Navbar */}
       <header className="home-nav">
         <div className="home-brand">
           <Mark />
           <span className="home-brand-text">SQL Query Agent</span>
         </div>
-        <div className="home-nav-badges">
-          <span className="badge-pill">
-            <Database size={13} /> Neon PostgreSQL
-          </span>
-          <span className="badge-pill">
-            <Zap size={13} /> Groq Llama 3.3
-          </span>
-          <span className="badge-pill security">
-            <LockKeyhole size={12} /> 100% Read Only
-          </span>
+
+        <div className="home-nav-actions" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={false}
+            className="home-nav-link"
+            onClick={() => onOpenAuth('login')}
+          >
+            Sign in
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={false}
+            className="home-nav-btn"
+            onClick={() => onOpenAuth('signup')}
+          >
+            <span>Sign up</span>
+            <ArrowRight size={14} />
+          </button>
         </div>
       </header>
 
-      {/* Main Hero & Auth Split */}
-      <main className="home-main">
-        <div className="home-hero">
-          <div className="hero-tag">
-            <Sparkles size={14} />
-            <span>Natural Language Database Analytics</span>
+      {/* Hero Section */}
+      <main className="home-hero-clean">
+        <div className="hero-content">
+          <div className="hero-pill">
+            <Sparkles size={13} />
+            <span>AI Database Agent</span>
+            <span className="pill-dot">·</span>
+            <span>Neon PostgreSQL & Groq</span>
           </div>
 
-          <h1 className="hero-title">
-            Ask your database in plain English. Get <em>SQL & charts</em> instantly.
+          <h1 className="hero-heading">
+            Talk to your database.<br />
+            Inspect the <em>SQL & charts</em>.
           </h1>
 
-          <p className="hero-subtitle">
-            Connect your PostgreSQL or SQLite database and query your data using natural language.
-            Inspect the exact SQL executed, view automatic interactive charts, and keep full conversation history with guaranteed read-only safety.
+          <p className="hero-lead">
+            Ask plain English questions, explore auto-generated charts, and verify every read-only query.
+            No manual SQL syntax, zero write risks.
           </p>
 
-          <div className="hero-features">
-            <div className="feature-item">
-              <div className="feature-icon"><ShieldCheck size={18} /></div>
-              <div>
-                <strong>Guaranteed Read-Only Safety</strong>
-                <p>Every query is AST-parsed by sqlglot and run in strict read-only transactions. Write operations are rejected before execution.</p>
-              </div>
-            </div>
-
-            <div className="feature-item">
-              <div className="feature-icon"><Zap size={18} /></div>
-              <div>
-                <strong>Ultra-Fast Groq Inference</strong>
-                <p>Powered by Llama 3.3 70B on Groq LPUs for sub-second query generation, automatic error correction, and dialect adaptation.</p>
-              </div>
-            </div>
-
-            <div className="feature-item">
-              <div className="feature-icon"><BarChart3 size={18} /></div>
-              <div>
-                <strong>Smart Visualizations</strong>
-                <p>Categorical distributions and time-series trends are automatically graphed with one-click toggles between charts, tables, and SQL.</p>
-              </div>
-            </div>
+          <div className="hero-cta-group">
+            <button
+              type="button"
+              className="cta-primary"
+              onClick={() => onOpenAuth('signup')}
+            >
+              <span>Get started free</span>
+              <ArrowRight size={16} />
+            </button>
+            <button
+              type="button"
+              className="cta-secondary"
+              onClick={() => onOpenAuth('login')}
+            >
+              <span>Sign in to Workspace</span>
+            </button>
           </div>
+        </div>
 
-          <div className="hero-samples">
-            <span className="samples-label">Popular queries you can ask:</span>
-            <div className="samples-grid">
-              {SAMPLE_QUESTIONS.map((q, i) => (
-                <div key={i} className="sample-chip">
-                  <CheckCircle2 size={13} />
-                  <span>{q}</span>
+        {/* Product Visual Mockup */}
+        <div className="hero-preview-wrap">
+          <div className="mockup-window">
+            <div className="mockup-header">
+              <div className="mockup-dots">
+                <span className="dot red"></span>
+                <span className="dot yellow"></span>
+                <span className="dot green"></span>
+              </div>
+              <div className="mockup-address">
+                <LockKeyhole size={11} />
+                <span>sql-query-agent / workspace</span>
+              </div>
+              <div className="mockup-tag">
+                <ShieldCheck size={12} />
+                <span>Read-only active</span>
+              </div>
+            </div>
+
+            <div className="mockup-body">
+              {/* User Prompt */}
+              <div className="mockup-user-bubble">
+                <span>Revenue by month this year</span>
+              </div>
+
+              {/* Agent Answer */}
+              <div className="mockup-agent-card">
+                <div className="mockup-agent-head">
+                  <Mark />
+                  <strong>Query Agent</strong>
+                  <span className="mockup-latency">
+                    <Zap size={11} /> Groq 380ms
+                  </span>
                 </div>
-              ))}
+
+                <p className="mockup-answer-text">
+                  Total revenue for 2026 reached <strong>₹28,45,200</strong> across 360 completed orders, peaking in October.
+                </p>
+
+                {/* Visual Chart Mockup */}
+                <div className="mockup-chart-card">
+                  <div className="chart-card-head">
+                    <div className="chart-title">
+                      <BarChart3 size={13} />
+                      <span>Monthly Revenue Trend (INR)</span>
+                    </div>
+                    <div className="chart-actions">
+                      <span className="chart-chip active">Chart</span>
+                      <span className="chart-chip">Table</span>
+                    </div>
+                  </div>
+
+                  <div className="chart-bars-wrap">
+                    <div className="chart-bar-col"><div className="chart-bar-fill" style={{ height: '42%' }}></div><span>Jan</span></div>
+                    <div className="chart-bar-col"><div className="chart-bar-fill" style={{ height: '55%' }}></div><span>Feb</span></div>
+                    <div className="chart-bar-col"><div className="chart-bar-fill" style={{ height: '48%' }}></div><span>Mar</span></div>
+                    <div className="chart-bar-col"><div className="chart-bar-fill" style={{ height: '68%' }}></div><span>Apr</span></div>
+                    <div className="chart-bar-col"><div className="chart-bar-fill" style={{ height: '74%' }}></div><span>May</span></div>
+                    <div className="chart-bar-col"><div className="chart-bar-fill" style={{ height: '62%' }}></div><span>Jun</span></div>
+                    <div className="chart-bar-col"><div className="chart-bar-fill" style={{ height: '81%' }}></div><span>Jul</span></div>
+                    <div className="chart-bar-col"><div className="chart-bar-fill" style={{ height: '94%' }}></div><span>Aug</span></div>
+                    <div className="chart-bar-col"><div className="chart-bar-fill" style={{ height: '88%' }}></div><span>Sep</span></div>
+                    <div className="chart-bar-col highlight"><div className="chart-bar-fill" style={{ height: '100%' }}></div><span>Oct</span></div>
+                    <div className="chart-bar-col"><div className="chart-bar-fill" style={{ height: '76%' }}></div><span>Nov</span></div>
+                  </div>
+                </div>
+
+                {/* SQL Chip */}
+                <div className="mockup-sql-chip">
+                  <Terminal size={12} />
+                  <code>SELECT strftime('%Y-%m', order_date) AS month, SUM(total_inr) AS revenue FROM orders GROUP BY month;</code>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Auth Box */}
-        <div className="home-auth-column">
-          <div className="auth-card">
-            <div className="auth-header">
-              <div className="brand"><Mark /><span>SQL Workspace</span></div>
-              <span className="read-only"><LockKeyhole size={12} /> Secure login</span>
-            </div>
-
-            <h2>{mode === 'login' ? 'Welcome back' : 'Create your account'}</h2>
-            <p className="auth-sub">
-              {mode === 'login'
-                ? 'Sign in to access your chat history and query databases.'
-                : 'Sign up to start asking questions and generating insights.'}
-            </p>
-
-            <div className="auth-tabs" role="tablist">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={mode === 'login'}
-                className={mode === 'login' ? 'active' : ''}
-                onClick={() => switchMode('login')}
-              >
-                Sign in
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={mode === 'signup'}
-                className={mode === 'signup' ? 'active' : ''}
-                onClick={() => switchMode('signup')}
-              >
-                Sign up
-              </button>
-            </div>
-
-            <form className="auth-form" onSubmit={submit}>
-              {mode === 'signup' && (
-                <label>
-                  <span>Full name</span>
-                  <input
-                    type="text"
-                    placeholder="Ananya Rao"
-                    value={name}
-                    onChange={e => setName(e.target.value)}
-                    required
-                    minLength={2}
-                    autoComplete="name"
-                  />
-                </label>
-              )}
-              <label>
-                <span>Email address</span>
-                <input
-                  type="email"
-                  placeholder="you@company.com"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  required
-                  autoComplete="email"
-                />
-              </label>
-              <label>
-                <span>Password</span>
-                <input
-                  type="password"
-                  placeholder={mode === 'signup' ? 'At least 6 characters' : 'Enter your password'}
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  required
-                  minLength={mode === 'signup' ? 6 : 1}
-                  autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-                />
-              </label>
-
-              {error && <div role="alert" className="auth-error">{error}</div>}
-
-              <button type="submit" className="auth-submit" disabled={busy}>
-                {busy ? <Loader2 size={16} className="spin" /> : <ArrowRight size={16} />}
-                <span>{mode === 'login' ? 'Sign in to Workspace' : 'Create account & Start'}</span>
-              </button>
-            </form>
-
-            <div className="auth-footer-note">
-              <span>Managed on Neon PostgreSQL · Zero-data-retention AI inference</span>
-            </div>
+        {/* 3 Core Value Pillars */}
+        <section className="home-pillars">
+          <div className="pillar-card">
+            <div className="pillar-icon"><Zap size={18} /></div>
+            <h3>Sub-Second SQL Inference</h3>
+            <p>Converts complex multi-table analytics questions into correct SQL in milliseconds using Groq's Llama 3.3 engine.</p>
           </div>
-        </div>
+
+          <div className="pillar-card">
+            <div className="pillar-icon"><ShieldCheck size={18} /></div>
+            <h3>100% Read-Only Safety</h3>
+            <p>AST analysis via sqlglot prevents updates, deletes, and DDL commands. Enforced with read-only database transactions.</p>
+          </div>
+
+          <div className="pillar-card">
+            <div className="pillar-icon"><Database size={18} /></div>
+            <h3>Backed by Neon Postgres</h3>
+            <p>Connected to serverless Neon PostgreSQL for pooled application queries, persistent chat history, and secure sessions.</p>
+          </div>
+        </section>
       </main>
 
       {/* Footer */}
-      <footer className="home-footer">
-        <p>SQL Query Agent · Read-Only Natural Language Analytics · Backed by Neon PostgreSQL & Groq</p>
+      <footer className="home-footer-clean">
+        <p>SQL Query Agent · Natural Language Analytics on Neon PostgreSQL · Guaranteed Read-Only</p>
       </footer>
     </div>
   )

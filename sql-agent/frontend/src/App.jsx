@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Menu, SquareTerminal, LockKeyhole, X } from 'lucide-react'
 import { ask, getMe, getSchema, getToken, reset, setToken } from './api'
+import AuthPage from './components/AuthPage'
 import HomePage from './components/HomePage'
 import ConnectDbModal from './components/ConnectDbModal'
 import Sidebar from './components/Sidebar'
@@ -36,6 +37,7 @@ export default function App() {
   const session = useRef(crypto.randomUUID())
   const pending = useRef(false)
   const [user, setUser] = useState(null)
+  const [authView, setAuthView] = useState(null)
   const [checkingAuth, setCheckingAuth] = useState(() => !!getToken())
   const [messages, setMessages] = useState([])
   const [history, setHistory] = useState([])
@@ -62,6 +64,7 @@ export default function App() {
   function logout() {
     setToken('')
     setUser(null)
+    setAuthView('login')
     setMessages([])
     setHistory([])
     setTables([])
@@ -183,7 +186,22 @@ export default function App() {
   }
 
   if (!user) {
-    return <div className="shell light"><HomePage onAuth={handleAuth} /></div>
+    if (authView) {
+      return (
+        <div className="shell light">
+          <AuthPage
+            initialMode={authView}
+            onAuth={handleAuth}
+            onBack={() => setAuthView(null)}
+          />
+        </div>
+      )
+    }
+    return (
+      <div className="shell light">
+        <HomePage onOpenAuth={mode => setAuthView(mode)} />
+      </div>
+    )
   }
 
   return <div className="shell light">
