@@ -1,7 +1,10 @@
 import React, { useState } from 'react'
-import { LockKeyhole, ArrowRight, Loader2, ArrowLeft } from 'lucide-react'
+import { LockKeyhole, ArrowRight, Loader2, ArrowLeft, Sparkles, ShieldCheck } from 'lucide-react'
 import { login, signup } from '../api'
 import { Mark } from './Sidebar'
+
+const PERSON_THINKING_IMAGE =
+  'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=1200&q=80'
 
 export default function AuthPage({ onAuth, onBack, initialMode = 'login' }) {
   const [mode, setMode] = useState(initialMode)
@@ -35,93 +38,133 @@ export default function AuthPage({ onAuth, onBack, initialMode = 'login' }) {
 
   return (
     <div className="auth-page">
-      <div className="auth-card">
-        {onBack && (
-          <button type="button" className="auth-back-btn" onClick={onBack}>
-            <ArrowLeft size={14} />
-            <span>Back to home</span>
-          </button>
-        )}
+      <div className="auth-split-wrapper">
+        {/* Left Side: Thoughtful Analyst / Person Thinking About Data Insights */}
+        <div className="auth-visual-side">
+          <img
+            src={PERSON_THINKING_IMAGE}
+            alt="Professional analyst thinking about data insights"
+            className="auth-person-img"
+            loading="eager"
+          />
+          <div className="auth-visual-overlay"></div>
 
-        <div className="auth-header">
-          <div className="brand"><Mark /><span>SQL Query Agent</span></div>
-          <span className="read-only"><LockKeyhole size={12} /> Read only</span>
+          <div className="auth-visual-top">
+            <div className="auth-brand-badge">
+              <Mark />
+              <span>SQL Query Agent</span>
+            </div>
+          </div>
+
+          <div className="auth-visual-quote-box">
+            <div className="auth-quote-tag">
+              <Sparkles size={13} />
+              <span>Data Intelligence</span>
+            </div>
+            <p className="auth-quote-text">
+              “How did revenue trend by month? Which product category drove highest growth?”
+            </p>
+            <div className="auth-quote-footer">
+              <ShieldCheck size={14} />
+              <span>100% Read-Only Safety · Backed by Neon PostgreSQL</span>
+            </div>
+          </div>
         </div>
 
-        <h1>{mode === 'login' ? 'Welcome back' : 'Create your account'}</h1>
-        <p className="auth-sub">
-          {mode === 'login'
-            ? 'Sign in to access your chat history and query databases.'
-            : 'Sign up to start exploring tables, charts, and SQL insights.'}
-        </p>
+        {/* Right Side: Enlarged, Spacious Sign In / Sign Up Form Box */}
+        <div className="auth-card-enlarged">
+          {onBack && (
+            <button type="button" className="auth-back-btn" onClick={onBack}>
+              <ArrowLeft size={15} />
+              <span>Back to home</span>
+            </button>
+          )}
 
-        <div className="auth-tabs" role="tablist">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={mode === 'login'}
-            className={mode === 'login' ? 'active' : ''}
-            onClick={() => switchMode('login')}
-          >
-            Sign in
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={mode === 'signup'}
-            className={mode === 'signup' ? 'active' : ''}
-            onClick={() => switchMode('signup')}
-          >
-            Sign up
-          </button>
-        </div>
+          <div className="auth-header">
+            <div className="brand">
+              <Mark />
+              <span>SQL Workspace</span>
+            </div>
+            <span className="read-only">
+              <LockKeyhole size={12} /> Read only
+            </span>
+          </div>
 
-        <form className="auth-form" onSubmit={submit}>
-          {mode === 'signup' && (
+          <h1>{mode === 'login' ? 'Welcome back' : 'Create your account'}</h1>
+          <p className="auth-sub">
+            {mode === 'login'
+              ? 'Sign in to access your chat history and query databases.'
+              : 'Sign up to start exploring tables, charts, and SQL insights.'}
+          </p>
+
+          <div className="auth-tabs" role="tablist">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === 'login'}
+              className={mode === 'login' ? 'active' : ''}
+              onClick={() => switchMode('login')}
+            >
+              Sign in
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === 'signup'}
+              className={mode === 'signup' ? 'active' : ''}
+              onClick={() => switchMode('signup')}
+            >
+              Sign up
+            </button>
+          </div>
+
+          <form className="auth-form" onSubmit={submit}>
+            {mode === 'signup' && (
+              <label>
+                <span>Full name</span>
+                <input
+                  type="text"
+                  placeholder="Ananya Rao"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  required
+                  minLength={2}
+                  autoComplete="name"
+                />
+              </label>
+            )}
             <label>
-              <span>Full name</span>
+              <span>Email address</span>
               <input
-                type="text"
-                placeholder="Ananya Rao"
-                value={name}
-                onChange={e => setName(e.target.value)}
+                type="email"
+                placeholder="you@company.com"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
                 required
-                minLength={2}
-                autoComplete="name"
+                autoComplete="email"
               />
             </label>
-          )}
-          <label>
-            <span>Email address</span>
-            <input
-              type="email"
-              placeholder="you@company.com"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-            />
-          </label>
-          <label>
-            <span>Password</span>
-            <input
-              type="password"
-              placeholder={mode === 'signup' ? 'At least 6 characters' : 'Enter your password'}
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
-              minLength={mode === 'signup' ? 6 : 1}
-              autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-            />
-          </label>
+            <label>
+              <span>Password</span>
+              <input
+                type="password"
+                placeholder={mode === 'signup' ? 'At least 6 characters' : 'Enter your password'}
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+                minLength={mode === 'signup' ? 6 : 1}
+                autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+              />
+            </label>
 
-          {error && <div role="alert" className="auth-error">{error}</div>}
+            {error && <div role="alert" className="auth-error">{error}</div>}
 
-          <button type="submit" className="auth-submit" disabled={busy}>
-            {busy ? <Loader2 size={16} className="spin" /> : <ArrowRight size={16} />}
-            <span>{mode === 'login' ? 'Sign in' : 'Create account'}</span>
-          </button>
-        </form>
+            <button type="submit" className="auth-submit" disabled={busy}>
+              {busy ? <Loader2 size={16} className="spin" /> : <ArrowRight size={16} />}
+              <span>{mode === 'login' ? 'Sign in' : 'Create account'}</span>
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   )

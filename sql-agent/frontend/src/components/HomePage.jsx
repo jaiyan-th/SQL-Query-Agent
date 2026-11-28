@@ -30,11 +30,8 @@ export default function HomePage({ onOpenAuth }) {
           <span className="nav-tag">
             <Database size={13} /> Neon PostgreSQL
           </span>
-          <span className="nav-tag">
-            <Zap size={13} /> Groq LPU
-          </span>
           <span className="nav-tag security">
-            <LockKeyhole size={12} /> Read-Only
+            <LockKeyhole size={12} /> 100% Read-Only
           </span>
         </nav>
 
@@ -100,11 +97,6 @@ export default function HomePage({ onOpenAuth }) {
 
             <div className="hero-stats-strip">
               <div className="stat-unit">
-                <strong>&lt; 500ms</strong>
-                <span>SQL Generation</span>
-              </div>
-              <div className="stat-divider"></div>
-              <div className="stat-unit">
                 <strong>100%</strong>
                 <span>Read-Only Protected</span>
               </div>
@@ -112,6 +104,11 @@ export default function HomePage({ onOpenAuth }) {
               <div className="stat-unit">
                 <strong>PostgreSQL</strong>
                 <span>Managed on Neon</span>
+              </div>
+              <div className="stat-divider"></div>
+              <div className="stat-unit">
+                <strong>Plain English</strong>
+                <span>Natural Language to SQL</span>
               </div>
             </div>
           </div>
@@ -141,10 +138,10 @@ export default function HomePage({ onOpenAuth }) {
               {/* Floating Live Agent Badge */}
               <div className="floating-metric-badge bottom-right">
                 <div className="badge-icon dark">
-                  <Zap size={16} />
+                  <Sparkles size={16} />
                 </div>
                 <div>
-                  <small>Groq Engine · Read-Only</small>
+                  <small>AI SQL Engine · Read-Only</small>
                   <code>SELECT strftime('%Y-%m', date)...</code>
                 </div>
               </div>
@@ -196,7 +193,7 @@ export default function HomePage({ onOpenAuth }) {
             <span>· Natural Language Business Analytics</span>
           </div>
           <div className="footer-right">
-            <span>Powered by Groq LPUs & Neon PostgreSQL</span>
+            <span>AI-Powered Natural Language Analytics · Neon PostgreSQL</span>
           </div>
         </div>
       </footer>
